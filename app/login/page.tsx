@@ -25,6 +25,20 @@ export default function LoginPage() {
         loginPassword = 'a1234'
       }
 
+      if (!loginEmail.includes('@')) {
+        const res = await fetch('/api/auth/resolve-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ loginId: loginEmail })
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          setError(data?.error || '아이디를 찾을 수 없습니다.')
+          return
+        }
+        loginEmail = data.email
+      }
+
       const supabase = createSupabaseBrowserClient()
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
@@ -71,7 +85,7 @@ export default function LoginPage() {
           <h1 className="auth-title">여왕개미미디어 CRM</h1>
           <p className="auth-subtitle">DB통계 CRM</p>
           <div className="field">
-            <label className="label">이메일</label>
+            <label className="label">아이디</label>
             <input
               className="input"
               value={email}
