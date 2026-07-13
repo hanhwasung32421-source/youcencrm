@@ -406,6 +406,18 @@ textarea {
   transform: none;
 }
 
+.button.multiline {
+  white-space: normal;
+  padding: 10px 14px;
+}
+
+.button-multiline-label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  font-weight: 800;
+}
+
 .muted {
   color: var(--muted);
 }

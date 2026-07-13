@@ -16,7 +16,6 @@ export default function SignupPage() {
 
   const [email, setEmail] = useState('')
   const [emailOtpSent, setEmailOtpSent] = useState(false)
-  const [emailOtp, setEmailOtp] = useState('')
   const [emailVerified, setEmailVerified] = useState(false)
   const [emailAccessToken, setEmailAccessToken] = useState('')
 
@@ -90,31 +89,6 @@ export default function SignupPage() {
       setEmailOtpSent(true)
       setEmailVerified(false)
       setMessage('이메일로 인증 메일을 보냈습니다. 메일의 확인(Confirm) 링크를 누르면 이 페이지로 돌아오며 자동으로 인증됩니다.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const verifyEmailOtp = async () => {
-    setError('')
-    setMessage('')
-    setLoading(true)
-    try {
-      const supabase = createSupabaseBrowserClient()
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: email.trim(),
-        token: emailOtp.trim(),
-        type: 'email'
-      })
-
-      if (error || !data.session?.access_token) {
-        setError(error?.message || '인증번호가 올바르지 않습니다.')
-        return
-      }
-
-      setEmailVerified(true)
-      setEmailAccessToken(data.session.access_token)
-      setMessage('이메일 인증이 완료되었습니다.')
     } finally {
       setLoading(false)
     }
@@ -238,8 +212,11 @@ export default function SignupPage() {
             <label className="label">이메일</label>
             <div className="row">
               <input ref={emailRef} className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <button className="button secondary" type="button" disabled={loading} onClick={sendEmailOtp}>
-                인증보내기
+              <button className="button secondary multiline" type="button" disabled={loading} onClick={sendEmailOtp}>
+                <span className="button-multiline-label">
+                  <span>인증</span>
+                  <span>전송</span>
+                </span>
               </button>
             </div>
           </div>
@@ -247,17 +224,11 @@ export default function SignupPage() {
           {emailOtpSent ? (
             <div className="panel soft">
               <div className="row-between">
-                <span className="label">이메일 인증번호 (6자리)</span>
+                <span className="label">이메일 인증</span>
                 {emailVerified ? <span className="small message-success">인증 완료</span> : null}
               </div>
               <div className="small muted" style={{ marginTop: 8, lineHeight: 1.6 }}>
-                인증번호가 안 오고 “Confirm email address” 링크만 오면: 메일의 확인 링크를 누른 뒤 다시 이 페이지로 돌아오면 자동으로 인증됩니다.
-              </div>
-              <div className="row" style={{ marginTop: 12 }}>
-                <input className="input" value={emailOtp} onChange={(e) => setEmailOtp(e.target.value)} placeholder="인증번호" />
-                <button className="button" type="button" disabled={loading} onClick={verifyEmailOtp}>
-                  확인
-                </button>
+                메일에서 <b>Confirm email address</b>를 클릭해 주세요. 클릭 후 이 페이지로 돌아오면 자동으로 인증됩니다.
               </div>
             </div>
           ) : null}
