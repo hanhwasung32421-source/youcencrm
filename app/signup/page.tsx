@@ -101,9 +101,12 @@ export default function SignupPage() {
         const status = (error as { status?: number } | null)?.status
         const message = error.message || ''
         if (status === 429 || /too many|rate limit|429/i.test(message)) {
-          const cooldownMs = 30 * 1000
+          // Supabase 이메일 전송 제한은 프로젝트 단위로 누적될 수 있어서
+          // 화면에서 짧게(30초) 막는다고 바로 풀리지 않는 경우가 있습니다.
+          // 사용자가 반복 클릭하지 않도록 5분 쿨다운을 둡니다.
+          const cooldownMs = 5 * 60 * 1000
           setEmailCooldownUntil(Date.now() + cooldownMs)
-          setEmailSendError('인증 메일 전송 요청이 너무 많습니다. 30초 후 다시 시도해 주세요.')
+          setEmailSendError('인증 메일 전송 요청이 너무 많습니다. 5분 후 다시 시도해 주세요.')
         } else {
           setEmailSendError(message)
         }
