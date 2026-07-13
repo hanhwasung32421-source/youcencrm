@@ -1,10 +1,14 @@
-# Nuxt dev/build outputs
+# Next.js
+.next
+out
+dist
+
+# old build dirs
 .output
 .data
 .nuxt
 .nitro
 .cache
-dist
 
 # Node dependencies
 node_modules

@@ -1,0 +1,42 @@
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import { requireAdmin } from '@/lib/auth'
+
+const bodySchema = z.object({
+  accessToken: z.string().min(10),
+  userId: z.string().uuid(),
+  roleType: z.enum(['super_admin', 'admin', 'general_manager', 'manager', 'assistant_manager', 'senior_staff', 'staff', 'retired'])
+})
+
+export async function POST(request: Request) {
+  try {
+    const body = bodySchema.parse(await request.json())
+    const { profile, supabaseAdmin } = await requireAdmin(body.accessToken)
+
+    const { error } = await supabaseAdmin
+      .from('crm_users')
+      .update({
+        role_type: body.roleType,
+        employment_status: body.roleType === 'retired' ? 'inactive' : 'active',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', body.userId)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    await supabaseAdmin.from('audit_logs').insert({
+      actor_user_id: profile.id,
+      action_type: 'change_role',
+      target_type: 'crm_user',
+      target_id: body.userId,
+      diff_summary: { role_type: body.roleType }
+    })
+
+    return NextResponse.json({ ok: true })
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || '직급 저장 실패' }, { status: 500 })
+  }
+}
+
