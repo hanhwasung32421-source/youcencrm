@@ -58,25 +58,32 @@ export default function LoginPage() {
 
   return (
     <div className="auth-wrap">
-      <div className="panel form-stack">
-        <h1 className="page-title">로그인</h1>
-        <div className="field">
-          <label className="label">이메일</label>
-          <input className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <div className="auth-shell">
+        <div className="panel soft">
+          <div className="panel-title">로그인</div>
+          <p className="panel-subtitle">
+            문서 프로그램처럼 정돈된 작업 공간으로 들어갑니다. 권한에 따라 관리자 또는 유튜버 화면으로 자동 이동합니다.
+          </p>
         </div>
-        <div className="field">
-          <label className="label">비밀번호</label>
-          <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </div>
-        <button className="button" disabled={loading} onClick={onSubmit}>
-          로그인
-        </button>
-        {error ? <div className="message-error small">{error}</div> : null}
-        <div className="small muted">
-          계정이 없나요? <Link className="link" href="/signup">회원가입</Link>
+
+        <div className="panel form-stack">
+          <div className="field">
+            <label className="label">이메일</label>
+            <input className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="field">
+            <label className="label">비밀번호</label>
+            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </div>
+          <button className="button" disabled={loading} onClick={onSubmit}>
+            로그인
+          </button>
+          {error ? <div className="message-error small">{error}</div> : null}
+          <div className="small muted">
+            계정이 없나요? <Link className="link" href="/signup">회원가입</Link>
+          </div>
         </div>
       </div>
     </div>
   )
 }
-

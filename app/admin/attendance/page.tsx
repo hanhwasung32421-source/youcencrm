@@ -90,7 +90,7 @@ export default function AdminAttendancePage() {
   return (
     <AuthGuard requireAdmin>
       <AppShell title="근태 관리" subtitle="직원을 선택해 출근, 지각, 휴가, 조퇴를 기록할 수 있습니다.">
-        <div className="row" style={{ flexWrap: 'wrap' }}>
+        <div className="toolbar">
           <button className={`button ${period === 'day' ? '' : 'secondary'}`} onClick={() => setPeriod('day')}>일별</button>
           <button className={`button ${period === 'week' ? '' : 'secondary'}`} onClick={() => setPeriod('week')}>주별</button>
           <button className={`button ${period === 'month' ? '' : 'secondary'}`} onClick={() => setPeriod('month')}>월별</button>
@@ -98,12 +98,17 @@ export default function AdminAttendancePage() {
 
         <div className="grid grid-2">
           <div className="panel">
-            <div className="card-title">직원 목록</div>
+            <div className="panel-header">
+              <div>
+                <div className="panel-title">직원 목록</div>
+                <p className="panel-subtitle">대상 직원을 선택하면 우측 기록 문서가 활성화됩니다.</p>
+              </div>
+            </div>
             <div className="list" style={{ marginTop: 16 }}>
               {users.map((user) => (
                 <button
                   key={user.id}
-                  className="button secondary"
+                  className={`button secondary ${selectedUserId === user.id ? 'active' : ''}`}
                   style={{
                     textAlign: 'left',
                     justifyContent: 'flex-start',
@@ -119,21 +124,29 @@ export default function AdminAttendancePage() {
 
           <div className="panel stack">
             <div className="row-between">
-              <div className="card-title">근태 등록</div>
+              <div>
+                <div className="panel-title">근태 등록</div>
+                <div className="panel-subtitle">선택한 날짜 기준으로 상태를 바로 기록합니다.</div>
+              </div>
               <input className="input" style={{ maxWidth: 180 }} type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
             </div>
             <div className="grid grid-2">
               <button className="button success" onClick={() => setAttendance('present')}>출근</button>
-              <button className="button" style={{ background: '#f59e0b' }} onClick={() => setAttendance('late')}>지각</button>
-              <button className="button" style={{ background: '#8b5cf6' }} onClick={() => setAttendance('vacation')}>휴가</button>
+              <button className="button warning" onClick={() => setAttendance('late')}>지각</button>
+              <button className="button violet" onClick={() => setAttendance('vacation')}>휴가</button>
               <button className="button danger" onClick={() => setAttendance('early_leave')}>조퇴</button>
             </div>
 
-            <div className="panel">
-              <div className="card-title">선택 직원 최근 기록</div>
+            <div className="panel soft">
+              <div className="panel-header">
+                <div>
+                  <div className="panel-title">선택 직원 최근 기록</div>
+                  <p className="panel-subtitle">일자별 근태 상태를 최신순으로 보여줍니다.</p>
+                </div>
+              </div>
               <div className="list" style={{ marginTop: 16 }}>
                 {selectedDays.length === 0 ? (
-                  <div className="muted">기록이 없습니다.</div>
+                  <div className="empty-state">기록이 없습니다.</div>
                 ) : (
                   selectedDays.map((day) => (
                     <div className="list-item" key={day.id}>
@@ -153,4 +166,3 @@ export default function AdminAttendancePage() {
     </AuthGuard>
   )
 }
-

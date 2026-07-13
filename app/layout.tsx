@@ -13,10 +13,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="app-shell">
           <header className="topbar">
             <div className="container topbar-inner">
-              <div>
-                <div className="brand">유센 CRM</div>
-                <div className="brand-sub">유튜브 업로드 후 URL 입력 기반 통계형 CRM</div>
+              <div className="brand-wrap">
+                <div className="brand-mark" />
+                <div>
+                  <div className="brand">유센 CRM</div>
+                  <div className="brand-sub">유튜브 업로드 후 URL 입력 기반 통계형 CRM</div>
+                </div>
               </div>
+              <div className="pill small">Document Workspace</div>
             </div>
           </header>
           <main className="container page">{children}</main>
@@ -25,4 +29,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   )
 }
-

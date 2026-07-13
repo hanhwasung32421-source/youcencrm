@@ -119,6 +119,12 @@ export default function CreatorVideosPage() {
       <AppShell title="영상 등록" subtitle="업로드 완료 후 URL과 기본 분류만 입력하면 업로드 시각과 통계가 자동 저장됩니다.">
         <div className="grid grid-2">
           <div className="panel form-stack">
+            <div className="panel-header">
+              <div>
+                <div className="panel-title">등록 문서 작성</div>
+                <p className="panel-subtitle">계정 선택 후 영상 URL과 핵심 분류만 입력하면 CRM 문서가 생성됩니다.</p>
+              </div>
+            </div>
             <div className="field">
               <label className="label">유튜브 계정 선택</label>
               <select className="select" value={youtubeAccountId} onChange={(e) => setYoutubeAccountId(e.target.value)}>
@@ -155,10 +161,15 @@ export default function CreatorVideosPage() {
           </div>
 
           <div className="panel">
-            <div className="card-title">최근 등록 영상</div>
+            <div className="panel-header">
+              <div>
+                <div className="panel-title">최근 등록 영상</div>
+                <p className="panel-subtitle">최근 문서처럼 쌓인 영상 기록과 통계 요약입니다.</p>
+              </div>
+            </div>
             <div className="list" style={{ marginTop: 16 }}>
               {items.length === 0 ? (
-                <div className="muted">아직 등록된 영상이 없습니다.</div>
+                <div className="empty-state">아직 등록된 영상이 없습니다.</div>
               ) : (
                 items.map((item) => (
                   <div className="list-item" key={item.id}>
@@ -179,4 +190,3 @@ export default function CreatorVideosPage() {
     </AuthGuard>
   )
 }
-

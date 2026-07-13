@@ -85,6 +85,12 @@ export default function AdminUsersPage() {
     <AuthGuard requireAdmin>
       <AppShell title="직원 직급 관리" subtitle="총 관리자와 관리자는 하위 직원의 직급을 변경할 수 있습니다.">
         <div className="panel">
+          <div className="panel-header">
+            <div>
+              <div className="panel-title">직급 편집 목록</div>
+              <p className="panel-subtitle">직원별 직급을 문서 행처럼 확인하고 바로 수정할 수 있습니다.</p>
+            </div>
+          </div>
           <div className="list">
             {items.map((user, index) => (
               <div className="list-item" key={user.id}>
@@ -124,4 +130,3 @@ export default function AdminUsersPage() {
     </AuthGuard>
   )
 }
-

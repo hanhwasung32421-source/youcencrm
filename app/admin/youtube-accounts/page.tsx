@@ -84,6 +84,12 @@ export default function AdminYoutubeAccountsPage() {
       <AppShell title="유튜브 계정 관리" subtitle="여러 유튜브 계정을 계속 추가해 유튜버가 선택해서 통계를 연결할 수 있습니다.">
         <div className="grid grid-2">
           <div className="panel form-stack">
+            <div className="panel-header">
+              <div>
+                <div className="panel-title">계정 등록 문서</div>
+                <p className="panel-subtitle">관리자가 유튜브 계정 이름, API 키, 채널 정보를 문서처럼 정리해 추가합니다.</p>
+              </div>
+            </div>
             <div className="field">
               <label className="label">계정 이름</label>
               <input className="input" value={accountName} onChange={(e) => setAccountName(e.target.value)} />
@@ -106,10 +112,15 @@ export default function AdminYoutubeAccountsPage() {
           </div>
 
           <div className="panel">
-            <div className="card-title">등록된 유튜브 계정</div>
+            <div className="panel-header">
+              <div>
+                <div className="panel-title">등록된 유튜브 계정</div>
+                <p className="panel-subtitle">현재 CRM에서 선택 가능한 계정 목록입니다.</p>
+              </div>
+            </div>
             <div className="list" style={{ marginTop: 16 }}>
               {items.length === 0 ? (
-                <div className="muted">등록된 유튜브 계정이 없습니다.</div>
+                <div className="empty-state">등록된 유튜브 계정이 없습니다.</div>
               ) : (
                 items.map((item) => (
                   <div className="list-item" key={item.id}>
@@ -127,4 +138,3 @@ export default function AdminYoutubeAccountsPage() {
     </AuthGuard>
   )
 }
-
