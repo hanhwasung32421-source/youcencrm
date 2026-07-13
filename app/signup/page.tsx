@@ -24,6 +24,7 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [emailCooldownUntil, setEmailCooldownUntil] = useState(0)
   const phoneMidRef = useRef<HTMLInputElement | null>(null)
   const phoneLastRef = useRef<HTMLInputElement | null>(null)
   const emailRef = useRef<HTMLInputElement | null>(null)
@@ -70,6 +71,14 @@ export default function SignupPage() {
   const sendEmailOtp = async () => {
     setError('')
     setMessage('')
+
+    const remainMs = emailCooldownUntil - Date.now()
+    if (remainMs > 0) {
+      const remainSec = Math.ceil(remainMs / 1000)
+      setError(`인증 메일 전송 제한 중입니다. ${remainSec}초 후 다시 시도해 주세요.`)
+      return
+    }
+
     setLoading(true)
     try {
       const supabase = createSupabaseBrowserClient()
@@ -82,13 +91,24 @@ export default function SignupPage() {
       })
 
       if (error) {
-        setError(error.message)
+        const status = (error as { status?: number } | null)?.status
+        const message = error.message || ''
+        if (status === 429 || /too many|rate limit|429/i.test(message)) {
+          const cooldownMs = 60 * 1000
+          setEmailCooldownUntil(Date.now() + cooldownMs)
+          setError('인증 메일 전송 요청이 너무 많습니다. 60초 후 다시 시도해 주세요.')
+        } else {
+          setError(message)
+        }
         return
       }
 
       setEmailOtpSent(true)
       setEmailVerified(false)
+      setEmailCooldownUntil(Date.now() + 60 * 1000)
       setMessage('이메일로 인증 메일을 보냈습니다. 메일의 확인(Confirm) 링크를 누르면 이 페이지로 돌아오며 자동으로 인증됩니다.')
+    } catch (e: any) {
+      setError(e?.message || '인증 메일 전송 중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }

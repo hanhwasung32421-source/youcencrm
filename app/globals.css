@@ -407,15 +407,25 @@ textarea {
 }
 
 .button.multiline {
+  flex: 0 0 78px;
+  min-width: 78px;
+  min-height: 52px;
   white-space: normal;
-  padding: 10px 14px;
+  padding: 8px 10px;
 }
 
 .button-multiline-label {
   display: flex;
   flex-direction: column;
-  line-height: 1.05;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
   font-weight: 800;
+}
+
+.button-multiline-label span {
+  display: block;
+  white-space: nowrap;
 }
 
 .muted {
