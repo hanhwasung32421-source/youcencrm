@@ -3,11 +3,10 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { sha256 } from '@/lib/crypto'
 import { createSupabaseAdminClient } from '@/lib/supabase-admin'
-import { createSupabasePublicClient } from '@/lib/supabase-public'
 import { SIGNUP_CHALLENGE_SECRET } from '@/lib/app-config'
 
 const bodySchema = z.object({
-  accessToken: z.string().min(10),
+  email: z.string().email(),
   loginId: z.string().min(2).max(30),
   name: z.string().min(1).max(50),
   birthDate: z.string().regex(/^\d{8}$/),
@@ -33,31 +32,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '자동가입방지 4자리 숫자가 일치하지 않습니다.' }, { status: 400 })
     }
 
-    const supabasePublic = createSupabasePublicClient()
-    const { data: userData, error: userError } = await supabasePublic.auth.getUser(body.accessToken)
-    if (userError || !userData.user?.email) {
-      return NextResponse.json({ error: '이메일 인증을 먼저 완료해 주세요.' }, { status: 401 })
-    }
-
-    const userEmail = userData.user.email
     const birthIso = `${body.birthDate.slice(0, 4)}-${body.birthDate.slice(4, 6)}-${body.birthDate.slice(6, 8)}`
     const phone = `010-${body.phoneMid}-${body.phoneLast}`
 
     const supabaseAdmin = createSupabaseAdminClient()
-    const authUserId = userData.user.id
+    const { data: userList, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+    if (listError) {
+      return NextResponse.json({ error: listError.message }, { status: 500 })
+    }
 
-    const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(authUserId, {
-      password: body.password,
-      email_confirm: true,
-      user_metadata: {
-        ...(userData.user.user_metadata || {}),
-        login_id: body.loginId,
-        display_name: body.name
-      }
-    })
-
-    if (updateAuthError) {
-      return NextResponse.json({ error: updateAuthError.message }, { status: 400 })
+    const emailExists = (userList.users || []).some((user) => user.email?.toLowerCase() === body.email.toLowerCase())
+    if (emailExists) {
+      return NextResponse.json({ error: '이미 가입된 이메일입니다.' }, { status: 400 })
     }
 
     const { data: existingLoginId } = await supabaseAdmin
@@ -66,24 +52,34 @@ export async function POST(request: Request) {
       .eq('login_id', body.loginId)
       .maybeSingle()
 
-    if (existingLoginId && existingLoginId.auth_user_id !== authUserId) {
+    if (existingLoginId) {
       return NextResponse.json({ error: '이미 사용 중인 아이디입니다.' }, { status: 400 })
     }
 
-    const { error: profileError } = await supabaseAdmin.from('crm_users').upsert(
-      {
-        auth_user_id: authUserId,
-        email: userEmail,
-        name: body.name,
+    const { data: created, error: createAuthError } = await supabaseAdmin.auth.admin.createUser({
+      email: body.email,
+      password: body.password,
+      email_confirm: true,
+      user_metadata: {
         login_id: body.loginId,
-        birth_date: birthIso,
-        phone,
-        role_type: 'staff',
-        employment_status: 'active',
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: 'auth_user_id' }
-    )
+        display_name: body.name
+      }
+    })
+
+    if (createAuthError || !created.user) {
+      return NextResponse.json({ error: createAuthError?.message || '회원가입에 실패했습니다.' }, { status: 400 })
+    }
+
+    const { error: profileError } = await supabaseAdmin.from('crm_users').insert({
+      auth_user_id: created.user.id,
+      email: body.email,
+      name: body.name,
+      login_id: body.loginId,
+      birth_date: birthIso,
+      phone,
+      role_type: 'staff',
+      employment_status: 'active'
+    })
 
     if (profileError) {
       return NextResponse.json({ error: `CRM 프로필 생성 실패: ${profileError.message}` }, { status: 500 })

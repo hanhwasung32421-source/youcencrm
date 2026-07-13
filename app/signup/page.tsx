@@ -3,8 +3,6 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
-import { APP_ORIGIN } from '@/lib/app-config'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -16,17 +14,15 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
 
   const [email, setEmail] = useState('')
-  const [emailOtpSent, setEmailOtpSent] = useState(false)
-  const [emailVerified, setEmailVerified] = useState(false)
-  const [emailAccessToken, setEmailAccessToken] = useState('')
+  const [emailChecked, setEmailChecked] = useState(false)
+  const [emailCheckedValue, setEmailCheckedValue] = useState('')
 
   const [challengeCode, setChallengeCode] = useState('----')
   const [antiBotCode, setAntiBotCode] = useState('')
   const [error, setError] = useState('')
-  const [emailSendError, setEmailSendError] = useState('')
+  const [emailCheckError, setEmailCheckError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const [emailCooldownUntil, setEmailCooldownUntil] = useState(0)
   const phoneMidRef = useRef<HTMLInputElement | null>(null)
   const phoneLastRef = useRef<HTMLInputElement | null>(null)
   const emailRef = useRef<HTMLInputElement | null>(null)
@@ -43,120 +39,42 @@ export default function SignupPage() {
     void refresh()
   }, [])
 
-  // 회원가입은 "매번 이메일 인증"을 강제합니다.
-  // /signup을 그냥 들어온 경우(인증 링크로 들어온게 아닌 경우)에는 기존 세션을 제거해서
-  // 이전에 인증했던 이메일이 자동으로 붙지 않게 합니다.
-  useEffect(() => {
-    const supabase = createSupabaseBrowserClient()
-
-    const hasAuthParams = () => {
-      const url = new URL(window.location.href)
-      const hash = window.location.hash || ''
-      return (
-        url.searchParams.has('code') ||
-        url.searchParams.get('type') === 'magiclink' ||
-        url.searchParams.has('token_hash') ||
-        hash.includes('access_token=')
-      )
-    }
-
-    const resetSignupEmailState = () => {
-      setEmail('')
-      setEmailOtpSent(false)
-      setEmailVerified(false)
-      setEmailAccessToken('')
-      setEmailSendError('')
-      setMessage('')
-    }
-
-    const init = async () => {
-      if (!hasAuthParams()) {
-        // 그냥 회원가입 페이지 접근 = 무조건 새 인증부터
-        await supabase.auth.signOut()
-        resetSignupEmailState()
-        return
-      }
-
-      // 인증 링크(메일 Sign in)로 들어온 경우: 세션을 확인해서 이메일 인증 완료 처리
-      const {
-        data: { session }
-      } = await supabase.auth.getSession()
-
-      if (session?.access_token && session.user?.email) {
-        setEmailVerified(true)
-        setEmailAccessToken(session.access_token)
-        setEmail(session.user.email)
-        setEmailOtpSent(true)
-      }
-    }
-
-    void init()
-
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!hasAuthParams()) return
-      if (session?.access_token && session.user?.email) {
-        setEmailVerified(true)
-        setEmailAccessToken(session.access_token)
-        setEmail(session.user.email)
-        setEmailOtpSent(true)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const sendEmailOtp = async () => {
+  const checkEmailDuplicate = async () => {
     setError('')
     setMessage('')
-    setEmailSendError('')
+    setEmailCheckError('')
 
     if (!email.trim()) {
-      setEmailSendError('이메일을 먼저 입력해 주세요.')
-      return
-    }
-
-    const remainMs = emailCooldownUntil - Date.now()
-    if (remainMs > 0) {
-      const remainSec = Math.ceil(remainMs / 1000)
-      setEmailSendError(`인증 메일 전송 제한 중입니다. ${remainSec}초 후 다시 시도해 주세요.`)
+      setEmailCheckError('이메일을 먼저 입력해 주세요.')
       return
     }
 
     setLoading(true)
     try {
-      const supabase = createSupabaseBrowserClient()
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: {
-          // 사용자가 메일의 Sign in 버튼을 누르면 /signup 으로 돌아오게
-          emailRedirectTo: `${APP_ORIGIN}/signup`
-        }
+      const res = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() })
       })
+      const data = await res.json().catch(() => ({}))
 
-      if (error) {
-        const status = (error as { status?: number } | null)?.status
-        const message = error.message || ''
-        if (status === 429 || /too many|rate limit|429/i.test(message)) {
-          // Supabase 이메일 전송 제한은 프로젝트 단위로 누적될 수 있어서
-          // 화면에서 짧게(30초) 막는다고 바로 풀리지 않는 경우가 있습니다.
-          // 사용자가 반복 클릭하지 않도록 5분 쿨다운을 둡니다.
-          const cooldownMs = 5 * 60 * 1000
-          setEmailCooldownUntil(Date.now() + cooldownMs)
-          setEmailSendError('인증 메일 전송 요청이 너무 많습니다. 5분 후 다시 시도해 주세요.')
-        } else {
-          setEmailSendError(message)
-        }
+      if (!res.ok) {
+        setEmailCheckError(data?.error || '이메일 중복확인에 실패했습니다.')
         return
       }
 
-      setEmailOtpSent(true)
-      setEmailVerified(false)
-      setEmailCooldownUntil(Date.now() + 30 * 1000)
-      setMessage('이메일을 보냈습니다. 메일에서 Sign in 버튼을 누르면 회원가입 페이지로 돌아옵니다.')
+      if (data.exists) {
+        setEmailChecked(false)
+        setEmailCheckedValue('')
+        setEmailCheckError('이미 가입된 이메일입니다.')
+        return
+      }
+
+      setEmailChecked(true)
+      setEmailCheckedValue(email.trim())
+      setMessage('사용 가능한 이메일입니다.')
     } catch (e: any) {
-      setEmailSendError(e?.message || '인증 메일 전송 중 오류가 발생했습니다.')
+      setEmailCheckError(e?.message || '이메일 중복확인 중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }
@@ -168,8 +86,8 @@ export default function SignupPage() {
     setLoading(true)
 
     try {
-      if (!emailVerified || !emailAccessToken) {
-        setError('이메일 인증을 먼저 완료해 주세요.')
+      if (!emailChecked || emailCheckedValue !== email.trim()) {
+        setError('이메일 중복확인을 먼저 완료해 주세요.')
         return
       }
 
@@ -177,7 +95,7 @@ export default function SignupPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          accessToken: emailAccessToken,
+          email: email.trim(),
           loginId: loginId.trim(),
           name: name.trim(),
           birthDate: birthDate.trim(),
@@ -213,7 +131,7 @@ export default function SignupPage() {
         <div className="panel soft">
           <div className="panel-title">회원가입</div>
           <p className="panel-subtitle">
-            1단계에서 이메일 인증을 하고, 2단계에서 가입 정보를 입력합니다.
+            이메일 중복확인을 통과한 뒤 가입 정보를 입력하면 가입이 완료됩니다.
           </p>
         </div>
 
@@ -226,36 +144,20 @@ export default function SignupPage() {
                 className="input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={emailVerified}
+                onBlur={() => {
+                  if (emailCheckedValue !== email.trim()) {
+                    setEmailChecked(false)
+                  }
+                }}
               />
-              {!emailVerified ? (
-                <button
-                  className="button secondary multiline"
-                  type="button"
-                  disabled={loading || emailCooldownUntil > Date.now()}
-                  onClick={sendEmailOtp}
-                >
-                  <span className="button-multiline-label">
-                    <span>인증</span>
-                    <span>전송</span>
-                  </span>
-                </button>
-              ) : null}
+              <button className="button secondary" type="button" disabled={loading} onClick={checkEmailDuplicate}>
+                중복확인
+              </button>
             </div>
-            {emailSendError ? <div className="message-error small">{emailSendError}</div> : null}
+            {emailCheckError ? <div className="message-error small">{emailCheckError}</div> : null}
           </div>
 
-          {!emailVerified && emailOtpSent ? (
-            <div className="panel soft">
-              <div className="row-between">
-                <span className="label">이메일 인증</span>
-              </div>
-              <div className="small muted" style={{ marginTop: 8, lineHeight: 1.6 }}>
-                메일에서 <b>Sign in</b> 버튼을 클릭해 주세요. 클릭하면 이 페이지로 다시 돌아옵니다.
-              </div>
-            </div>
-          ) : null}
-          {emailVerified ? (
+          {emailChecked ? (
             <>
               <div className="field">
                 <label className="label">아이디</label>
