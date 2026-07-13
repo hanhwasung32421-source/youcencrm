@@ -58,7 +58,7 @@ export default function SignupPage() {
 
       setEmailOtpSent(true)
       setEmailVerified(false)
-      setMessage('인증번호를 이메일로 보냈습니다.')
+      setMessage('이메일로 인증번호를 보냈습니다. 메일에 6자리 숫자가 오도록 Supabase 템플릿이 설정되어 있어야 합니다.')
     } finally {
       setLoading(false)
     }
@@ -232,7 +232,7 @@ export default function SignupPage() {
           {emailOtpSent ? (
             <div className="panel soft">
               <div className="row-between">
-                <span className="label">이메일 인증번호</span>
+                <span className="label">이메일 인증번호 (6자리)</span>
                 {emailVerified ? <span className="small message-success">인증 완료</span> : null}
               </div>
               <div className="row" style={{ marginTop: 12 }}>
