@@ -16,7 +16,6 @@ export default function SignupPage() {
 
   const refresh = async () => {
     setCode('')
-    setError('')
     const res = await fetch('/api/auth/challenge')
     const data = (await res.json()) as { code: string }
     setChallengeCode(data.code)
@@ -77,7 +76,7 @@ export default function SignupPage() {
             <input className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="field">
-            <label className="label">비밀번호</label>
+            <label className="label">비밀번호 (6자 이상)</label>
             <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           <div className="panel soft">
@@ -94,6 +93,7 @@ export default function SignupPage() {
                 maxLength={4}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="4자리"
+                inputMode="numeric"
               />
             </div>
           </div>
