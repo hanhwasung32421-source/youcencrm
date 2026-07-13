@@ -414,6 +414,11 @@ textarea {
   padding: 8px 10px;
 }
 
+.button.nowrap {
+  white-space: nowrap;
+  min-width: 92px;
+}
+
 .button-multiline-label {
   display: flex;
   flex-direction: column;

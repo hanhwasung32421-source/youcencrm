@@ -150,7 +150,7 @@ export default function SignupPage() {
                   }
                 }}
               />
-              <button className="button secondary" type="button" disabled={loading} onClick={checkEmailDuplicate}>
+              <button className="button secondary nowrap" type="button" disabled={loading} onClick={checkEmailDuplicate}>
                 중복확인
               </button>
             </div>
