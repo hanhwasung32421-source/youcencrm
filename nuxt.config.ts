@@ -6,6 +6,13 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
   css: ['~/assets/css/main.css'],
 
+  dir: {
+    pages: 'pages',
+    layouts: 'layouts',
+    middleware: 'middleware',
+    plugins: 'plugins'
+  },
+
   runtimeConfig: {
     // Server-only
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
