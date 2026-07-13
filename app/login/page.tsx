@@ -80,11 +80,26 @@ export default function LoginPage() {
         <div className="panel form-stack">
           <div className="field">
             <label className="label">이메일</label>
-            <input className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input
+              className="input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void onSubmit()
+              }}
+            />
           </div>
           <div className="field">
             <label className="label">비밀번호</label>
-            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input
+              className="input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void onSubmit()
+              }}
+            />
           </div>
           <button className="button" disabled={loading} onClick={onSubmit}>
             로그인
