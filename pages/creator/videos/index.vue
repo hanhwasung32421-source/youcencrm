@@ -10,6 +10,16 @@
     <div class="grid gap-6 lg:grid-cols-[420px_1fr]">
       <section class="rounded-lg border border-slate-800 bg-slate-900/40 p-4 space-y-4">
         <div class="space-y-1">
+          <div class="text-sm text-slate-300">유튜브 계정 선택</div>
+          <select v-model="form.youtubeAccountId" class="w-full rounded-md border border-slate-800 bg-slate-950 px-3 py-2">
+            <option disabled value="">유튜브 계정을 선택하세요</option>
+            <option v-for="account in youtubeAccounts" :key="account.id" :value="account.id">
+              {{ account.account_name }}<span v-if="account.channel_name"> · {{ account.channel_name }}</span>
+            </option>
+          </select>
+        </div>
+
+        <div class="space-y-1">
           <div class="text-sm text-slate-300">유튜브 영상 주소</div>
           <input
             v-model="form.youtubeUrl"
@@ -101,13 +111,22 @@ type VideoItem = {
   comment_count: number | null
 }
 
+type YoutubeAccountItem = {
+  id: string
+  account_name: string
+  channel_id: string | null
+  channel_name: string | null
+}
+
 const supabase = useSupabase()
 const loading = ref(false)
 const errorMsg = ref('')
 const successMsg = ref('')
 const items = ref<VideoItem[]>([])
+const youtubeAccounts = ref<YoutubeAccountItem[]>([])
 
 const form = reactive({
+  youtubeAccountId: '',
   youtubeUrl: '',
   contentType: 'longform' as 'longform' | 'shortform',
   stockName: '',
@@ -115,6 +134,7 @@ const form = reactive({
 })
 
 onMounted(async () => {
+  await loadYoutubeAccounts()
   await loadMyVideos()
 })
 
@@ -133,6 +153,18 @@ async function loadMyVideos() {
   items.value = res.items || []
 }
 
+async function loadYoutubeAccounts() {
+  const token = await getAccessToken()
+  if (!token) return
+  const res = await $fetch<{ items: YoutubeAccountItem[] }>('/api/youtube-accounts/available', {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  youtubeAccounts.value = res.items || []
+  if (!form.youtubeAccountId && youtubeAccounts.value.length > 0) {
+    form.youtubeAccountId = youtubeAccounts.value[0].id
+  }
+}
+
 async function submitVideo() {
   errorMsg.value = ''
   successMsg.value = ''
@@ -148,6 +180,7 @@ async function submitVideo() {
       method: 'POST',
       body: {
         accessToken: token,
+        youtubeAccountId: form.youtubeAccountId,
         youtubeUrl: form.youtubeUrl.trim(),
         contentType: form.contentType,
         stockName: form.stockName.trim(),
@@ -156,6 +189,7 @@ async function submitVideo() {
     })
 
     successMsg.value = '영상이 CRM에 저장되었습니다. 업로드 날짜와 기본 통계도 자동 반영되었습니다.'
+    form.youtubeAccountId = youtubeAccounts.value[0]?.id || ''
     form.youtubeUrl = ''
     form.contentType = 'longform'
     form.stockName = ''
@@ -175,4 +209,3 @@ function formatDate(value: string | null) {
   return date.toLocaleString('ko-KR')
 }
 </script>
-

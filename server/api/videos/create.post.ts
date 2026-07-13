@@ -6,6 +6,7 @@ import { fetchYoutubeVideoMeta } from '../../utils/youtube'
 
 const BodySchema = z.object({
   accessToken: z.string().min(10),
+  youtubeAccountId: z.string().uuid(),
   youtubeUrl: z.string().url(),
   contentType: z.enum(['longform', 'shortform']),
   stockName: z.string().min(1),
@@ -32,7 +33,21 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'CRM 프로필을 찾을 수 없습니다.' })
   }
 
-  const meta = await fetchYoutubeVideoMeta(body.youtubeUrl)
+  const { data: youtubeAccount, error: youtubeAccountError } = await admin
+    .from('youtube_accounts')
+    .select('id, account_name, api_key')
+    .eq('id', body.youtubeAccountId)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (youtubeAccountError || !youtubeAccount) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: '선택한 유튜브 계정을 찾을 수 없습니다.'
+    })
+  }
+
+  const meta = await fetchYoutubeVideoMeta(body.youtubeUrl, youtubeAccount.api_key)
 
   // 채널 확보
   let channelId: string | null = null
@@ -68,6 +83,7 @@ export default defineEventHandler(async (event) => {
   // 영상 저장 또는 갱신
   const payload = {
     youtube_video_id: meta.youtubeVideoId,
+    youtube_account_id: youtubeAccount.id,
     channel_id: channelId,
     primary_owner_user_id: profile.id,
     youtube_url: body.youtubeUrl,
@@ -118,6 +134,8 @@ export default defineEventHandler(async (event) => {
     related_channel_id: channelId,
     related_video_id: insertedVideo.id,
     payload_summary: {
+      youtube_account_id: youtubeAccount.id,
+      youtube_account_name: youtubeAccount.account_name,
       youtube_video_id: meta.youtubeVideoId,
       stock_name: body.stockName,
       content_type: body.contentType
@@ -129,4 +147,3 @@ export default defineEventHandler(async (event) => {
     video: insertedVideo
   }
 })
-

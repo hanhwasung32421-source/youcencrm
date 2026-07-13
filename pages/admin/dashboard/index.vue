@@ -30,6 +30,10 @@
       <div class="mt-2 text-sm text-slate-400">
         이 CRM은 유튜브에 업로드하는 시스템이 아니라, 업로드 완료 후 URL을 입력받아 업로드 날짜/시간과 기본 통계를 저장하고 비교하는 통계형 CRM입니다.
       </div>
+      <div class="mt-2 text-sm text-slate-400">
+        유튜브 계정이 여러 개면 관리자 페이지에서 계정 이름과 API 키를 계속 추가할 수 있습니다.
+        <NuxtLink to="/admin/youtube-accounts" class="ml-1 text-cyan-400 hover:underline">유튜브 계정 관리</NuxtLink>
+      </div>
     </div>
 
     <div class="rounded-lg border border-slate-800 bg-slate-900/40 p-4">

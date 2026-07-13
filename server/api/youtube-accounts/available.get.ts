@@ -16,30 +16,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const admin = getSupabaseAdmin()
-  const { data: profile } = await admin
-    .from('crm_users')
-    .select('id, role_type')
-    .eq('auth_user_id', userData.user.id)
-    .maybeSingle()
+  const { data, error } = await admin
+    .from('youtube_accounts')
+    .select('id, account_name, channel_id, channel_name')
+    .eq('is_active', true)
+    .order('account_name', { ascending: true })
 
-  if (!profile) {
-    throw createError({ statusCode: 404, statusMessage: 'CRM 프로필을 찾을 수 없습니다.' })
-  }
-
-  let query = admin
-    .from('videos')
-    .select('id, title, stock_name, content_type, published_at, view_count, like_count, comment_count, youtube_url, created_at, youtube_account_id')
-    .order('created_at', { ascending: false })
-    .limit(20)
-
-  if (profile.role_type === 'creator') {
-    query = query.eq('primary_owner_user_id', profile.id)
-  }
-
-  const { data, error } = await query
   if (error) {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
 
   return { items: data || [] }
 })
+

@@ -22,12 +22,13 @@ function parseIso8601Duration(duration: string) {
   return hours * 3600 + minutes * 60 + seconds
 }
 
-export async function fetchYoutubeVideoMeta(youtubeUrl: string) {
+export async function fetchYoutubeVideoMeta(youtubeUrl: string, apiKey?: string) {
   const config = useRuntimeConfig()
-  if (!config.youtubeApiKey) {
+  const resolvedApiKey = apiKey || config.youtubeApiKey
+  if (!resolvedApiKey) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'YOUTUBE_API_KEY 가 설정되어 있지 않습니다.'
+      statusMessage: '사용할 유튜브 API 키가 설정되어 있지 않습니다.'
     })
   }
 
@@ -66,7 +67,7 @@ export async function fetchYoutubeVideoMeta(youtubeUrl: string) {
     query: {
       id: videoId,
       part: 'snippet,contentDetails,statistics,status',
-      key: config.youtubeApiKey
+      key: resolvedApiKey
     }
   })
 
@@ -100,4 +101,3 @@ export async function fetchYoutubeVideoMeta(youtubeUrl: string) {
     commentCount: Number(item.statistics?.commentCount || 0)
   }
 }
-
