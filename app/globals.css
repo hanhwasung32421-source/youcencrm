@@ -499,6 +499,25 @@ textarea {
 .auth-wrap {
   max-width: 540px;
   margin: 48px auto 0;
+  position: relative;
+}
+
+.auth-wrap::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.18;
+  background-size: 360px 360px;
+  background-repeat: repeat;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27360%27%20height%3D%27360%27%20viewBox%3D%270%200%20360%20360%27%3E%3Cg%20fill%3D%27none%27%20stroke%3D%27%239ca3af%27%20stroke-width%3D%273%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20opacity%3D%270.55%27%3E%3Cg%20transform%3D%27translate(40%2C55)%20rotate(-18)%27%3E%3Cellipse%20cx%3D%270%27%20cy%3D%270%27%20rx%3D%2718%27%20ry%3D%2713%27%20fill%3D%27%23b6bcc6%27%20opacity%3D%270.35%27/%3E%3Cellipse%20cx%3D%2726%27%20cy%3D%270%27%20rx%3D%2714%27%20ry%3D%2710%27%20fill%3D%27%239ca3af%27%20opacity%3D%270.28%27/%3E%3Cellipse%20cx%3D%2746%27%20cy%3D%270%27%20rx%3D%2712%27%20ry%3D%278%27%20fill%3D%27%239ca3af%27%20opacity%3D%270.22%27/%3E%3Cpath%20d%3D%27M12%20-10%20L-6%20-22%27/%3E%3Cpath%20d%3D%27M12%2010%20L-6%2022%27/%3E%3Cpath%20d%3D%27M26%20-10%20L10%20-24%27/%3E%3Cpath%20d%3D%27M26%2010%20L10%2024%27/%3E%3Cpath%20d%3D%27M40%20-8%20L30%20-22%27/%3E%3Cpath%20d%3D%27M40%208%20L30%2022%27/%3E%3Cpath%20d%3D%27M54%20-4%20L68%20-18%27/%3E%3Cpath%20d%3D%27M54%204%20L68%2018%27/%3E%3C/g%3E%3Cg%20transform%3D%27translate(250%2C95)%20rotate(22)%27%3E%3Cellipse%20cx%3D%270%27%20cy%3D%270%27%20rx%3D%2716%27%20ry%3D%2712%27%20fill%3D%27%239ca3af%27%20opacity%3D%270.28%27/%3E%3Cellipse%20cx%3D%2724%27%20cy%3D%270%27%20rx%3D%2712%27%20ry%3D%279%27%20fill%3D%27%239ca3af%27%20opacity%3D%270.24%27/%3E%3Cellipse%20cx%3D%2742%27%20cy%3D%270%27%20rx%3D%2710%27%20ry%3D%277%27%20fill%3D%27%239ca3af%27%20opacity%3D%270.20%27/%3E%3Cpath%20d%3D%27M10%20-10%20L-6%20-20%27/%3E%3Cpath%20d%3D%27M10%2010%20L-6%2020%27/%3E%3Cpath%20d%3D%27M24%20-9%20L10%20-22%27/%3E%3Cpath%20d%3D%27M24%209%20L10%2022%27/%3E%3Cpath%20d%3D%27M36%20-7%20L48%20-20%27/%3E%3Cpath%20d%3D%27M36%207%20L48%2020%27/%3E%3C/g%3E%3Cg%20transform%3D%27translate(120%2C245)%20rotate(-8)%27%3E%3Cellipse%20cx%3D%270%27%20cy%3D%270%27%20rx%3D%2719%27%20ry%3D%2714%27%20fill%3D%27%239ca3af%27%20opacity%3D%270.28%27/%3E%3Cellipse%20cx%3D%2728%27%20cy%3D%270%27%20rx%3D%2714%27%20ry%3D%2710%27%20fill%3D%27%239ca3af%27%20opacity%3D%270.24%27/%3E%3Cellipse%20cx%3D%2749%27%20cy%3D%270%27%20rx%3D%2711%27%20ry%3D%278%27%20fill%3D%27%239ca3af%27%20opacity%3D%270.20%27/%3E%3Cpath%20d%3D%27M14%20-11%20L-4%20-25%27/%3E%3Cpath%20d%3D%27M14%2011%20L-4%2025%27/%3E%3Cpath%20d%3D%27M29%20-10%20L12%20-25%27/%3E%3Cpath%20d%3D%27M29%2010%20L12%2025%27/%3E%3Cpath%20d%3D%27M42%20-8%20L56%20-22%27/%3E%3Cpath%20d%3D%27M42%208%20L56%2022%27/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.auth-wrap > .auth-shell,
+.auth-wrap > .auth-center {
+  position: relative;
+  z-index: 1;
 }
 
 .auth-shell {

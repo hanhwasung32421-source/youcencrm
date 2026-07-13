@@ -43,31 +43,69 @@ export default function SignupPage() {
     void refresh()
   }, [])
 
+  // 회원가입은 "매번 이메일 인증"을 강제합니다.
+  // /signup을 그냥 들어온 경우(인증 링크로 들어온게 아닌 경우)에는 기존 세션을 제거해서
+  // 이전에 인증했던 이메일이 자동으로 붙지 않게 합니다.
   useEffect(() => {
     const supabase = createSupabaseBrowserClient()
 
-    const syncFromSession = async () => {
+    const hasAuthParams = () => {
+      const url = new URL(window.location.href)
+      const hash = window.location.hash || ''
+      return (
+        url.searchParams.has('code') ||
+        url.searchParams.get('type') === 'magiclink' ||
+        url.searchParams.has('token_hash') ||
+        hash.includes('access_token=')
+      )
+    }
+
+    const resetSignupEmailState = () => {
+      setEmail('')
+      setEmailOtpSent(false)
+      setEmailVerified(false)
+      setEmailAccessToken('')
+      setEmailSendError('')
+      setMessage('')
+    }
+
+    const init = async () => {
+      if (!hasAuthParams()) {
+        // 그냥 회원가입 페이지 접근 = 무조건 새 인증부터
+        await supabase.auth.signOut()
+        resetSignupEmailState()
+        return
+      }
+
+      // 인증 링크(메일 Sign in)로 들어온 경우: 세션을 확인해서 이메일 인증 완료 처리
       const {
         data: { session }
       } = await supabase.auth.getSession()
 
-      if (!session?.access_token || !session.user?.email) return
-
-      setEmailVerified(true)
-      setEmailAccessToken(session.access_token)
-      setEmail(session.user.email)
+      if (session?.access_token && session.user?.email) {
+        setEmailVerified(true)
+        setEmailAccessToken(session.access_token)
+        setEmail(session.user.email)
+        setEmailOtpSent(true)
+      }
     }
 
-    void syncFromSession()
+    void init()
 
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange(() => {
-      void syncFromSession()
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!hasAuthParams()) return
+      if (session?.access_token && session.user?.email) {
+        setEmailVerified(true)
+        setEmailAccessToken(session.access_token)
+        setEmail(session.user.email)
+        setEmailOtpSent(true)
+      }
     })
 
     return () => subscription.unsubscribe()
-  }, [email])
+  }, [])
 
   const sendEmailOtp = async () => {
     setError('')
