@@ -17,10 +17,28 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      let loginEmail = email.trim()
+      let loginPassword = password
+
+      if (loginEmail.toLowerCase() === 'admin' && password === 'a1234') {
+        const bootstrapRes = await fetch('/api/auth/bootstrap-admin', {
+          method: 'POST'
+        })
+        const bootstrapData = await bootstrapRes.json()
+
+        if (!bootstrapRes.ok) {
+          setError(bootstrapData?.error || '기본 관리자 계정 준비에 실패했습니다.')
+          return
+        }
+
+        loginEmail = bootstrapData.loginEmail
+        loginPassword = bootstrapData.loginPassword
+      }
+
       const supabase = createSupabaseBrowserClient()
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password
+        email: loginEmail,
+        password: loginPassword
       })
 
       if (error || !data.session?.access_token) {
@@ -64,6 +82,9 @@ export default function LoginPage() {
           <p className="panel-subtitle">
             문서 프로그램처럼 정돈된 작업 공간으로 들어갑니다. 권한에 따라 관리자 또는 유튜버 화면으로 자동 이동합니다.
           </p>
+          <div className="doc-highlight">
+            기본 총관리자 로그인: `admin` / `a1234`
+          </div>
         </div>
 
         <div className="panel form-stack">

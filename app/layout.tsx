@@ -1,5 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import { BUILD_VERSION } from '@/lib/generated-version'
 
 export const metadata: Metadata = {
   title: '유센 CRM',
@@ -20,7 +21,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <div className="brand-sub">유튜브 업로드 후 URL 입력 기반 통계형 CRM</div>
                 </div>
               </div>
-              <div className="pill small">Document Workspace</div>
+              <div className="row">
+                <div className="pill small">ver. {BUILD_VERSION}</div>
+                <div className="pill small">Document Workspace</div>
+              </div>
             </div>
           </header>
           <main className="container page">{children}</main>
