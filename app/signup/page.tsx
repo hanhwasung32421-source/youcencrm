@@ -41,6 +41,33 @@ export default function SignupPage() {
     void refresh()
   }, [])
 
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient()
+
+    const syncFromSession = async () => {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
+
+      const currentEmail = email.trim()
+      if (!session?.access_token || !session.user?.email || !currentEmail) return
+      if (session.user.email.toLowerCase() !== currentEmail.toLowerCase()) return
+
+      setEmailVerified(true)
+      setEmailAccessToken(session.access_token)
+    }
+
+    void syncFromSession()
+
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange(() => {
+      void syncFromSession()
+    })
+
+    return () => subscription.unsubscribe()
+  }, [email])
+
   const sendEmailOtp = async () => {
     setError('')
     setMessage('')
@@ -48,7 +75,11 @@ export default function SignupPage() {
     try {
       const supabase = createSupabaseBrowserClient()
       const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim()
+        email: email.trim(),
+        options: {
+          // 컨펌 링크를 눌렀을 때 404로 빠지지 않고, 항상 우리 사이트로 돌아오게 고정
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/signup`
+        }
       })
 
       if (error) {
@@ -58,7 +89,7 @@ export default function SignupPage() {
 
       setEmailOtpSent(true)
       setEmailVerified(false)
-      setMessage('이메일로 인증번호를 보냈습니다. 메일에 6자리 숫자가 오도록 Supabase 템플릿이 설정되어 있어야 합니다.')
+      setMessage('이메일로 인증 메일을 보냈습니다. 메일의 확인(Confirm) 링크를 누르면 이 페이지로 돌아오며 자동으로 인증됩니다.')
     } finally {
       setLoading(false)
     }
@@ -234,6 +265,9 @@ export default function SignupPage() {
               <div className="row-between">
                 <span className="label">이메일 인증번호 (6자리)</span>
                 {emailVerified ? <span className="small message-success">인증 완료</span> : null}
+              </div>
+              <div className="small muted" style={{ marginTop: 8, lineHeight: 1.6 }}>
+                인증번호가 안 오고 “Confirm email address” 링크만 오면: 메일의 확인 링크를 누른 뒤 다시 이 페이지로 돌아오면 자동으로 인증됩니다.
               </div>
               <div className="row" style={{ marginTop: 12 }}>
                 <input className="input" value={emailOtp} onChange={(e) => setEmailOtp(e.target.value)} placeholder="인증번호" />
