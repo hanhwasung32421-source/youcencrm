@@ -160,7 +160,7 @@ export default function SignupPage() {
                 className="input"
                 value={birthDate}
                 onChange={(e) => setBirthDate(e.target.value.replace(/[^\d]/g, '').slice(0, 8))}
-                placeholder="19870527"
+                placeholder="19950710"
               />
               <button
                 className="button secondary"

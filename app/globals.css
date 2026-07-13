@@ -334,6 +334,11 @@ textarea {
   transition: 0.15s ease;
 }
 
+.input::placeholder,
+.textarea::placeholder {
+  color: rgba(107, 114, 128, 0.35);
+}
+
 .input:focus,
 .select:focus,
 .textarea:focus {
