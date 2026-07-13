@@ -51,12 +51,11 @@ export default function SignupPage() {
         data: { session }
       } = await supabase.auth.getSession()
 
-      const currentEmail = email.trim()
-      if (!session?.access_token || !session.user?.email || !currentEmail) return
-      if (session.user.email.toLowerCase() !== currentEmail.toLowerCase()) return
+      if (!session?.access_token || !session.user?.email) return
 
       setEmailVerified(true)
       setEmailAccessToken(session.access_token)
+      setEmail(session.user.email)
     }
 
     void syncFromSession()
@@ -75,6 +74,11 @@ export default function SignupPage() {
     setMessage('')
     setEmailSendError('')
 
+    if (!email.trim()) {
+      setEmailSendError('이메일을 먼저 입력해 주세요.')
+      return
+    }
+
     const remainMs = emailCooldownUntil - Date.now()
     if (remainMs > 0) {
       const remainSec = Math.ceil(remainMs / 1000)
@@ -88,8 +92,8 @@ export default function SignupPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
-          // 컨펌 링크를 눌렀을 때 404로 빠지지 않고, 항상 우리 사이트로 돌아오게 고정
-          emailRedirectTo: `${APP_ORIGIN}/auth/callback?next=/signup`
+          // 사용자가 메일의 Sign in 버튼을 누르면 /signup 으로 돌아오게
+          emailRedirectTo: `${APP_ORIGIN}/signup`
         }
       })
 
@@ -109,7 +113,7 @@ export default function SignupPage() {
       setEmailOtpSent(true)
       setEmailVerified(false)
       setEmailCooldownUntil(Date.now() + 30 * 1000)
-      setMessage('이메일로 인증 메일을 보냈습니다. 메일의 확인(Confirm) 링크를 누르면 이 페이지로 돌아오며 자동으로 인증됩니다.')
+      setMessage('이메일을 보냈습니다. 메일에서 Sign in 버튼을 누르면 회원가입 페이지로 돌아옵니다.')
     } catch (e: any) {
       setEmailSendError(e?.message || '인증 메일 전송 중 오류가 발생했습니다.')
     } finally {
@@ -168,124 +172,137 @@ export default function SignupPage() {
         <div className="panel soft">
           <div className="panel-title">회원가입</div>
           <p className="panel-subtitle">
-            가입 아이디와 기본 정보를 입력하고, 이메일 인증과 자동가입방지를 통과하면 가입이 완료됩니다.
+            1단계에서 이메일 인증을 하고, 2단계에서 가입 정보를 입력합니다.
           </p>
         </div>
 
         <div className="panel form-stack">
           <div className="field">
-            <label className="label">아이디</label>
-            <input className="input" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="label">비밀번호 (6자 이상)</label>
-            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="label">이름</label>
-            <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="field">
-            <label className="label">생년월일</label>
-            <input
-              ref={birthRef}
-              className="input"
-              value={birthDate}
-              onChange={(e) => {
-                const next = e.target.value.replace(/[^\d]/g, '').slice(0, 8)
-                setBirthDate(next)
-                if (next.length === 8) phoneMidRef.current?.focus()
-              }}
-              placeholder="19950710"
-              inputMode="numeric"
-            />
-          </div>
-          <div className="field">
-            <label className="label">전화번호</label>
-            <div className="row">
-              <input className="input" style={{ maxWidth: 90, textAlign: 'center' }} value="010" disabled />
-              <span className="muted">-</span>
-              <input
-                ref={phoneMidRef}
-                className="input"
-                style={{ maxWidth: 120, textAlign: 'center' }}
-                value={phoneMid}
-                maxLength={4}
-                inputMode="numeric"
-                onChange={(e) => {
-                  const next = e.target.value.replace(/[^\d]/g, '').slice(0, 4)
-                  setPhoneMid(next)
-                  if (next.length === 4) phoneLastRef.current?.focus()
-                }}
-              />
-              <span className="muted">-</span>
-              <input
-                ref={phoneLastRef}
-                className="input"
-                style={{ maxWidth: 120, textAlign: 'center' }}
-                value={phoneLast}
-                maxLength={4}
-                inputMode="numeric"
-                onChange={(e) => {
-                  const next = e.target.value.replace(/[^\d]/g, '').slice(0, 4)
-                  setPhoneLast(next)
-                  if (next.length === 4) emailRef.current?.focus()
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="field">
             <label className="label">이메일</label>
             <div className="row">
-              <input ref={emailRef} className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <button
-                className="button secondary multiline"
-                type="button"
-                disabled={loading || emailCooldownUntil > Date.now()}
-                onClick={sendEmailOtp}
-              >
-                <span className="button-multiline-label">
-                  <span>인증</span>
-                  <span>전송</span>
-                </span>
-              </button>
+              <input
+                ref={emailRef}
+                className="input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={emailVerified}
+              />
+              {!emailVerified ? (
+                <button
+                  className="button secondary multiline"
+                  type="button"
+                  disabled={loading || emailCooldownUntil > Date.now()}
+                  onClick={sendEmailOtp}
+                >
+                  <span className="button-multiline-label">
+                    <span>인증</span>
+                    <span>전송</span>
+                  </span>
+                </button>
+              ) : null}
             </div>
             {emailSendError ? <div className="message-error small">{emailSendError}</div> : null}
           </div>
 
-          {emailOtpSent ? (
+          {!emailVerified && emailOtpSent ? (
             <div className="panel soft">
               <div className="row-between">
                 <span className="label">이메일 인증</span>
-                {emailVerified ? <span className="small message-success">인증 완료</span> : null}
               </div>
               <div className="small muted" style={{ marginTop: 8, lineHeight: 1.6 }}>
-                메일에서 <b>Confirm email address</b>를 클릭해 주세요. 클릭 후 이 페이지로 돌아오면 자동으로 인증됩니다.
+                메일에서 <b>Sign in</b> 버튼을 클릭해 주세요. 클릭하면 이 페이지로 다시 돌아옵니다.
               </div>
             </div>
           ) : null}
-          <div className="panel soft">
-            <div className="row-between">
-              <span className="label">자동가입방지</span>
-              <button className="button secondary" onClick={refresh}>새로 만들기</button>
-            </div>
-            <div className="row-between" style={{ marginTop: 12 }}>
-              <div className="card-value">{challengeCode}</div>
-              <input
-                className="input"
-                style={{ maxWidth: 140, textAlign: 'center' }}
-                value={antiBotCode}
-                maxLength={4}
-                onChange={(e) => setAntiBotCode(e.target.value)}
-                placeholder="4자리"
-                inputMode="numeric"
-              />
-            </div>
-          </div>
-          <button className="button" disabled={loading} onClick={onSubmit}>
-            가입하기
-          </button>
+          {emailVerified ? (
+            <>
+              <div className="field">
+                <label className="label">아이디</label>
+                <input className="input" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="label">비밀번호 (6자 이상)</label>
+                <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="label">이름</label>
+                <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="label">생년월일</label>
+                <input
+                  ref={birthRef}
+                  className="input"
+                  value={birthDate}
+                  onChange={(e) => {
+                    const next = e.target.value.replace(/[^\d]/g, '').slice(0, 8)
+                    setBirthDate(next)
+                    if (next.length === 8) phoneMidRef.current?.focus()
+                  }}
+                  placeholder="19950710"
+                  inputMode="numeric"
+                />
+              </div>
+              <div className="field">
+                <label className="label">전화번호</label>
+                <div className="row">
+                  <input className="input" style={{ maxWidth: 90, textAlign: 'center' }} value="010" disabled />
+                  <span className="muted">-</span>
+                  <input
+                    ref={phoneMidRef}
+                    className="input"
+                    style={{ maxWidth: 120, textAlign: 'center' }}
+                    value={phoneMid}
+                    maxLength={4}
+                    inputMode="numeric"
+                    onChange={(e) => {
+                      const next = e.target.value.replace(/[^\d]/g, '').slice(0, 4)
+                      setPhoneMid(next)
+                      if (next.length === 4) phoneLastRef.current?.focus()
+                    }}
+                  />
+                  <span className="muted">-</span>
+                  <input
+                    ref={phoneLastRef}
+                    className="input"
+                    style={{ maxWidth: 120, textAlign: 'center' }}
+                    value={phoneLast}
+                    maxLength={4}
+                    inputMode="numeric"
+                    onChange={(e) => {
+                      const next = e.target.value.replace(/[^\d]/g, '').slice(0, 4)
+                      setPhoneLast(next)
+                      if (next.length === 4) setTimeout(() => emailRef.current?.focus(), 0)
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="panel soft">
+                <div className="row-between">
+                  <span className="label">자동가입방지</span>
+                  <button className="button secondary" onClick={refresh}>
+                    새로 만들기
+                  </button>
+                </div>
+                <div className="row-between" style={{ marginTop: 12 }}>
+                  <div className="card-value">{challengeCode}</div>
+                  <input
+                    className="input"
+                    style={{ maxWidth: 140, textAlign: 'center' }}
+                    value={antiBotCode}
+                    maxLength={4}
+                    onChange={(e) => setAntiBotCode(e.target.value)}
+                    placeholder="4자리"
+                    inputMode="numeric"
+                  />
+                </div>
+              </div>
+              <button className="button" disabled={loading} onClick={onSubmit}>
+                가입하기
+              </button>
+            </>
+          ) : null}
+
           {error ? <div className="message-error small">{error}</div> : null}
           {message ? <div className="message-success small">{message}</div> : null}
           <div className="small muted">
