@@ -28,7 +28,7 @@ export default function SignupPage() {
   const phoneMidRef = useRef<HTMLInputElement | null>(null)
   const phoneLastRef = useRef<HTMLInputElement | null>(null)
   const emailRef = useRef<HTMLInputElement | null>(null)
-  const birthPickerRef = useRef<HTMLInputElement | null>(null)
+  const birthRef = useRef<HTMLInputElement | null>(null)
 
   const refresh = async () => {
     setAntiBotCode('')
@@ -186,34 +186,18 @@ export default function SignupPage() {
           </div>
           <div className="field">
             <label className="label">생년월일</label>
-            <div className="row">
-              <input
-                className="input"
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value.replace(/[^\d]/g, '').slice(0, 8))}
-                placeholder="19950710"
-              />
-              <button
-                className="button secondary"
-                type="button"
-                onClick={() => {
-                  birthPickerRef.current?.showPicker?.()
-                  birthPickerRef.current?.click()
-                }}
-              >
-                달력
-              </button>
-              <input
-                ref={birthPickerRef}
-                type="date"
-                style={{ position: 'absolute', opacity: 0, width: 1, height: 1, pointerEvents: 'none' }}
-                onChange={(e) => {
-                  const v = e.target.value // yyyy-mm-dd
-                  if (!v) return
-                  setBirthDate(v.replaceAll('-', ''))
-                }}
-              />
-            </div>
+            <input
+              ref={birthRef}
+              className="input"
+              value={birthDate}
+              onChange={(e) => {
+                const next = e.target.value.replace(/[^\d]/g, '').slice(0, 8)
+                setBirthDate(next)
+                if (next.length === 8) phoneMidRef.current?.focus()
+              }}
+              placeholder="19950710"
+              inputMode="numeric"
+            />
           </div>
           <div className="field">
             <label className="label">전화번호</label>
