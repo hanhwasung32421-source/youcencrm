@@ -66,18 +66,10 @@ export default function LoginPage() {
 
   return (
     <div className="auth-wrap">
-      <div className="auth-shell">
-        <div className="panel soft">
-          <div className="panel-title">로그인</div>
-          <p className="panel-subtitle">
-            문서 프로그램처럼 정돈된 작업 공간으로 들어갑니다. 권한에 따라 관리자 또는 유튜버 화면으로 자동 이동합니다.
-          </p>
-          <div className="doc-highlight">
-            기본 총관리자 로그인: `admin` / `a1234`
-          </div>
-        </div>
-
-        <div className="panel form-stack">
+      <div className="auth-center">
+        <div className="panel form-stack" style={{ width: '100%', maxWidth: 520 }}>
+          <h1 className="auth-title">여왕개미미디어 CRM</h1>
+          <p className="auth-subtitle">DB통계 CRM</p>
           <div className="field">
             <label className="label">이메일</label>
             <input

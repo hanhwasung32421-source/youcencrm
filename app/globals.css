@@ -101,6 +101,13 @@ textarea {
   color: var(--muted);
 }
 
+.footer-version {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 0 22px;
+}
+
 .page {
   padding: 28px 0 48px;
 }
@@ -471,6 +478,26 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+.auth-center {
+  display: flex;
+  justify-content: center;
+}
+
+.auth-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 6px;
+}
+
+.auth-subtitle {
+  text-align: center;
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .pill {
