@@ -22,6 +22,7 @@ export default function SignupPage() {
   const [challengeCode, setChallengeCode] = useState('----')
   const [antiBotCode, setAntiBotCode] = useState('')
   const [error, setError] = useState('')
+  const [emailSendError, setEmailSendError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [emailCooldownUntil, setEmailCooldownUntil] = useState(0)
@@ -71,11 +72,12 @@ export default function SignupPage() {
   const sendEmailOtp = async () => {
     setError('')
     setMessage('')
+    setEmailSendError('')
 
     const remainMs = emailCooldownUntil - Date.now()
     if (remainMs > 0) {
       const remainSec = Math.ceil(remainMs / 1000)
-      setError(`인증 메일 전송 제한 중입니다. ${remainSec}초 후 다시 시도해 주세요.`)
+      setEmailSendError(`인증 메일 전송 제한 중입니다. ${remainSec}초 후 다시 시도해 주세요.`)
       return
     }
 
@@ -94,21 +96,21 @@ export default function SignupPage() {
         const status = (error as { status?: number } | null)?.status
         const message = error.message || ''
         if (status === 429 || /too many|rate limit|429/i.test(message)) {
-          const cooldownMs = 60 * 1000
+          const cooldownMs = 30 * 1000
           setEmailCooldownUntil(Date.now() + cooldownMs)
-          setError('인증 메일 전송 요청이 너무 많습니다. 60초 후 다시 시도해 주세요.')
+          setEmailSendError('인증 메일 전송 요청이 너무 많습니다. 30초 후 다시 시도해 주세요.')
         } else {
-          setError(message)
+          setEmailSendError(message)
         }
         return
       }
 
       setEmailOtpSent(true)
       setEmailVerified(false)
-      setEmailCooldownUntil(Date.now() + 60 * 1000)
+      setEmailCooldownUntil(Date.now() + 30 * 1000)
       setMessage('이메일로 인증 메일을 보냈습니다. 메일의 확인(Confirm) 링크를 누르면 이 페이지로 돌아오며 자동으로 인증됩니다.')
     } catch (e: any) {
-      setError(e?.message || '인증 메일 전송 중 오류가 발생했습니다.')
+      setEmailSendError(e?.message || '인증 메일 전송 중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }
@@ -175,6 +177,10 @@ export default function SignupPage() {
             <input className="input" value={loginId} onChange={(e) => setLoginId(e.target.value)} />
           </div>
           <div className="field">
+            <label className="label">비밀번호 (6자 이상)</label>
+            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </div>
+          <div className="field">
             <label className="label">이름</label>
             <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
@@ -232,13 +238,19 @@ export default function SignupPage() {
             <label className="label">이메일</label>
             <div className="row">
               <input ref={emailRef} className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <button className="button secondary multiline" type="button" disabled={loading} onClick={sendEmailOtp}>
+              <button
+                className="button secondary multiline"
+                type="button"
+                disabled={loading || emailCooldownUntil > Date.now()}
+                onClick={sendEmailOtp}
+              >
                 <span className="button-multiline-label">
                   <span>인증</span>
                   <span>전송</span>
                 </span>
               </button>
             </div>
+            {emailSendError ? <div className="message-error small">{emailSendError}</div> : null}
           </div>
 
           {emailOtpSent ? (
@@ -252,11 +264,6 @@ export default function SignupPage() {
               </div>
             </div>
           ) : null}
-
-          <div className="field">
-            <label className="label">비밀번호 (6자 이상)</label>
-            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
           <div className="panel soft">
             <div className="row-between">
               <span className="label">자동가입방지</span>
