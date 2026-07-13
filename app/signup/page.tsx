@@ -27,6 +27,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const phoneMidRef = useRef<HTMLInputElement | null>(null)
   const phoneLastRef = useRef<HTMLInputElement | null>(null)
+  const emailRef = useRef<HTMLInputElement | null>(null)
   const birthPickerRef = useRef<HTMLInputElement | null>(null)
 
   const refresh = async () => {
@@ -209,7 +210,11 @@ export default function SignupPage() {
                 value={phoneLast}
                 maxLength={4}
                 inputMode="numeric"
-                onChange={(e) => setPhoneLast(e.target.value.replace(/[^\d]/g, '').slice(0, 4))}
+                onChange={(e) => {
+                  const next = e.target.value.replace(/[^\d]/g, '').slice(0, 4)
+                  setPhoneLast(next)
+                  if (next.length === 4) emailRef.current?.focus()
+                }}
               />
             </div>
           </div>
@@ -217,7 +222,7 @@ export default function SignupPage() {
           <div className="field">
             <label className="label">이메일</label>
             <div className="row">
-              <input className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input ref={emailRef} className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
               <button className="button secondary" type="button" disabled={loading} onClick={sendEmailOtp}>
                 인증보내기
               </button>
