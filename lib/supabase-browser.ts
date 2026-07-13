@@ -13,8 +13,8 @@ export function createSupabaseBrowserClient() {
         ).__PUBLIC_ENV__
       : undefined
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || publicEnv?.supabaseUrl
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || publicEnv?.supabaseAnonKey
+  const url = publicEnv?.supabaseUrl
+  const anon = publicEnv?.supabaseAnonKey
 
   if (!url || !anon) {
     throw new Error('Supabase 브라우저 환경변수가 설정되어 있지 않습니다.')
