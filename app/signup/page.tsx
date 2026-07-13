@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { APP_ORIGIN } from '@/lib/app-config'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -88,7 +89,7 @@ export default function SignupPage() {
         email: email.trim(),
         options: {
           // 컨펌 링크를 눌렀을 때 404로 빠지지 않고, 항상 우리 사이트로 돌아오게 고정
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/signup`
+          emailRedirectTo: `${APP_ORIGIN}/auth/callback?next=/signup`
         }
       })
 
