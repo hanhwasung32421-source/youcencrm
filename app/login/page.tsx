@@ -21,18 +21,8 @@ export default function LoginPage() {
       let loginPassword = password
 
       if (loginEmail.toLowerCase() === 'admin' && password === 'a1234') {
-        const bootstrapRes = await fetch('/api/auth/bootstrap-admin', {
-          method: 'POST'
-        })
-        const bootstrapData = await bootstrapRes.json()
-
-        if (!bootstrapRes.ok) {
-          setError(bootstrapData?.error || '기본 관리자 계정 준비에 실패했습니다.')
-          return
-        }
-
-        loginEmail = bootstrapData.loginEmail
-        loginPassword = bootstrapData.loginPassword
+        loginEmail = 'admin@youcencrm.local'
+        loginPassword = 'a1234'
       }
 
       const supabase = createSupabaseBrowserClient()
