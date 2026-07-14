@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getProfileByAccessToken } from '@/lib/auth'
-import { fetchYoutubeVideoMeta } from '@/lib/youtube'
+import { extractYoutubeVideoId, fetchYoutubeVideoMeta } from '@/lib/youtube'
 
 const bodySchema = z.object({
   accessToken: z.string().min(10),
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
     const { data: youtubeAccount, error: youtubeAccountError } = await supabaseAdmin
       .from('youtube_accounts')
-      .select('id, account_name, api_key')
+      .select('id, account_name, api_key, api_active, channel_id, channel_name')
       .eq('id', body.youtubeAccountId)
       .eq('is_active', true)
       .maybeSingle()
@@ -31,7 +31,61 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '선택한 유튜브 계정을 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    const meta = await fetchYoutubeVideoMeta(body.youtubeUrl, youtubeAccount.api_key)
+    const apiActive = Boolean((youtubeAccount as any).api_active)
+    const apiKey = String((youtubeAccount as any).api_key || '').trim()
+
+    let meta:
+      | Awaited<ReturnType<typeof fetchYoutubeVideoMeta>>
+      | {
+          youtubeVideoId: string
+          youtubeChannelId: string
+          channelName: string
+          title: string
+          description: string
+          publishedAt: string | null
+          durationSeconds: number | null
+          privacyStatus: string | null
+          thumbnailUrl: string | null
+          viewCount: number | null
+          likeCount: number | null
+          commentCount: number | null
+        }
+
+    if (apiActive && apiKey) {
+      meta = await fetchYoutubeVideoMeta(body.youtubeUrl, apiKey)
+    } else {
+      const youtubeVideoId = extractYoutubeVideoId(body.youtubeUrl)
+      if (!youtubeVideoId) {
+        return NextResponse.json({ error: '유효한 유튜브 영상 주소가 아닙니다.' }, { status: 400 })
+      }
+
+      const channelIdText = String((youtubeAccount as any).channel_id || '').trim()
+      const channelNameText = String((youtubeAccount as any).channel_name || '').trim()
+      if (!channelIdText) {
+        return NextResponse.json(
+          {
+            error:
+              '현재는 API가 비활성 상태입니다. 유튜브 계정에 채널 ID를 입력하거나, 관리자에서 API 활성화를 먼저 해 주세요.'
+          },
+          { status: 400 }
+        )
+      }
+
+      meta = {
+        youtubeVideoId,
+        youtubeChannelId: channelIdText,
+        channelName: channelNameText || `채널-${channelIdText.slice(0, 8)}`,
+        title: '',
+        description: '',
+        publishedAt: null,
+        durationSeconds: null,
+        privacyStatus: null,
+        thumbnailUrl: null,
+        viewCount: null,
+        likeCount: null,
+        commentCount: null
+      }
+    }
 
     let channelId: string | null = null
     const { data: existingChannel } = await supabaseAdmin
@@ -72,9 +126,9 @@ export async function POST(request: Request) {
           content_type: body.contentType,
           stock_name: body.stockName,
           content_category: body.contentCategory || null,
-          publish_state: 'published',
-          title: meta.title,
-          description: meta.description,
+          publish_state: apiActive ? 'published' : null,
+          title: meta.title || null,
+          description: meta.description || null,
           privacy_status: meta.privacyStatus,
           published_at: meta.publishedAt,
           duration_seconds: meta.durationSeconds,
@@ -82,7 +136,7 @@ export async function POST(request: Request) {
           view_count: meta.viewCount,
           like_count: meta.likeCount,
           comment_count: meta.commentCount,
-          last_synced_at: new Date().toISOString()
+          last_synced_at: apiActive ? new Date().toISOString() : null
         },
         { onConflict: 'youtube_video_id' }
       )
@@ -93,15 +147,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: upsertError?.message || '영상 저장 실패' }, { status: 500 })
     }
 
-    await supabaseAdmin.from('video_snapshots').insert({
-      video_id: insertedVideo.id,
-      snapshot_at: new Date().toISOString(),
-      view_count: meta.viewCount,
-      like_count: meta.likeCount,
-      comment_count: meta.commentCount,
-      privacy_status: meta.privacyStatus,
-      raw_json: meta
-    })
+    if (apiActive) {
+      await supabaseAdmin.from('video_snapshots').insert({
+        video_id: insertedVideo.id,
+        snapshot_at: new Date().toISOString(),
+        view_count: meta.viewCount,
+        like_count: meta.likeCount,
+        comment_count: meta.commentCount,
+        privacy_status: meta.privacyStatus,
+        raw_json: meta
+      })
+    }
 
     await supabaseAdmin.from('work_activity_events').insert({
       user_id: profile.id,
@@ -113,7 +169,8 @@ export async function POST(request: Request) {
         youtube_account_name: youtubeAccount.account_name,
         youtube_video_id: meta.youtubeVideoId,
         stock_name: body.stockName,
-        content_type: body.contentType
+        content_type: body.contentType,
+        api_active: apiActive
       }
     })
 

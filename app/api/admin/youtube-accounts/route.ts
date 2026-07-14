@@ -5,7 +5,7 @@ import { requireAdmin } from '@/lib/auth'
 const bodySchema = z.object({
   accessToken: z.string().min(10),
   accountName: z.string().min(1, '계정 이름을 입력해 주세요.'),
-  apiKey: z.string().min(1, 'YouTube API 키를 입력해 주세요.'),
+  apiKey: z.string().optional().nullable(),
   channelId: z.string().optional().nullable(),
   channelName: z.string().optional().nullable()
 })
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabaseAdmin
       .from('youtube_accounts')
-      .select('id, account_name, api_key, channel_id, channel_name, is_active, created_at')
+      .select('id, account_name, api_key, channel_id, channel_name, is_active, api_active, api_last_error, api_last_checked_at, created_at')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -40,10 +40,13 @@ export async function POST(request: Request) {
       .from('youtube_accounts')
       .insert({
         account_name: body.accountName.trim(),
-        api_key: body.apiKey.trim(),
+        api_key: body.apiKey?.trim() || '',
         channel_id: body.channelId?.trim() || null,
         channel_name: body.channelName?.trim() || null,
-        is_active: true
+        is_active: true,
+        api_active: false,
+        api_last_error: null,
+        api_last_checked_at: null
       })
       .select('id')
       .single()

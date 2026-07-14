@@ -1,4 +1,4 @@
-function extractVideoId(input: string) {
+export function extractYoutubeVideoId(input: string) {
   try {
     const url = new URL(input)
     if (url.hostname.includes('youtu.be')) return url.pathname.replace('/', '').trim()
@@ -19,7 +19,7 @@ function parseIsoDuration(duration: string) {
 }
 
 export async function fetchYoutubeVideoMeta(youtubeUrl: string, apiKey: string) {
-  const videoId = extractVideoId(youtubeUrl)
+  const videoId = extractYoutubeVideoId(youtubeUrl)
   if (!videoId) {
     throw new Error('유효한 유튜브 영상 주소가 아닙니다.')
   }
@@ -71,4 +71,3 @@ export async function fetchYoutubeVideoMeta(youtubeUrl: string, apiKey: string) 
     commentCount: Number(item.statistics?.commentCount || 0)
   }
 }
-

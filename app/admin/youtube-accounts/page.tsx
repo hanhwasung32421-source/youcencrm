@@ -11,6 +11,9 @@ type YoutubeAccount = {
   api_key: string
   channel_id: string | null
   channel_name: string | null
+  api_active?: boolean
+  api_last_error?: string | null
+  api_last_checked_at?: string | null
 }
 
 export default function AdminYoutubeAccountsPage() {
@@ -52,10 +55,6 @@ export default function AdminYoutubeAccountsPage() {
       setError('계정 이름을 입력해 주세요.')
       return
     }
-    if (!apiKey.trim()) {
-      setError('YouTube API 키를 입력해 주세요.')
-      return
-    }
 
     const supabase = createSupabaseBrowserClient()
     const {
@@ -69,7 +68,7 @@ export default function AdminYoutubeAccountsPage() {
       body: JSON.stringify({
         accessToken: session.access_token,
         accountName,
-        apiKey,
+        apiKey: apiKey || null,
         channelId: channelId || null,
         channelName: channelName || null
       })
@@ -85,6 +84,32 @@ export default function AdminYoutubeAccountsPage() {
     setChannelId('')
     setChannelName('')
     setMessage('유튜브 계정이 저장되었습니다.')
+    await loadAccounts()
+  }
+
+  const activateApi = async (youtubeAccountId: string) => {
+    setMessage('')
+    setError('')
+
+    const supabase = createSupabaseBrowserClient()
+    const {
+      data: { session }
+    } = await supabase.auth.getSession()
+    if (!session?.access_token) return
+
+    const res = await fetch('/api/admin/youtube-accounts/activate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken: session.access_token, youtubeAccountId })
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setError(data?.error || 'API 활성화 실패')
+      await loadAccounts()
+      return
+    }
+
+    setMessage('API가 활성화되었습니다.')
     await loadAccounts()
   }
 
@@ -104,7 +129,7 @@ export default function AdminYoutubeAccountsPage() {
               <input className="input" value={accountName} onChange={(e) => setAccountName(e.target.value)} />
             </div>
             <div className="field">
-              <label className="label">YouTube API 키 *</label>
+              <label className="label">YouTube API 키 (선택)</label>
               <input className="input" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
             </div>
             <div className="field">
@@ -136,7 +161,16 @@ export default function AdminYoutubeAccountsPage() {
                     <div>{item.account_name}</div>
                     <div className="small muted">채널명: {item.channel_name || '-'}</div>
                     <div className="small muted">채널ID: {item.channel_id || '-'}</div>
-                    <div className="small muted">API 키: {item.api_key.slice(0, 4)}...{item.api_key.slice(-4)}</div>
+                    <div className="small muted">
+                      API 상태: {item.api_active ? '활성화됨' : '비활성'}
+                      {item.api_last_error ? ` · 오류: ${item.api_last_error}` : ''}
+                    </div>
+                    <div className="small muted">API 키: {item.api_key ? `${item.api_key.slice(0, 4)}...${item.api_key.slice(-4)}` : '-'}</div>
+                    <div className="toolbar" style={{ marginTop: 12 }}>
+                      <button className="button secondary" onClick={() => activateApi(item.id)}>
+                        API 활성화
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
