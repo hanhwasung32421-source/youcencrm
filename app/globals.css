@@ -654,6 +654,46 @@ textarea {
   color: #374151;
 }
 
+.data-table {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.data-table-header,
+.data-table-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.7fr 0.8fr 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+}
+
+.data-table-header {
+  background: var(--panel-soft);
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.data-table-row {
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.data-table-row:last-child {
+  border-bottom: none;
+}
+
+.data-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 1100px) {
   .workspace {
     grid-template-columns: 1fr;

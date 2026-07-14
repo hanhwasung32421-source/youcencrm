@@ -1,14 +1,27 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 
+function isValidDate(value: string | null) {
+  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
+}
+
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('authorization') || ''
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
     const { supabaseAdmin } = await requireAdmin(token)
 
+    const url = new URL(request.url)
+    const startDate = url.searchParams.get('startDate')
+    const endDate = url.searchParams.get('endDate')
+
     const today = new Date().toISOString().slice(0, 10)
     const dayStart = `${today}T00:00:00.000Z`
+
+    const startDateValue = isValidDate(startDate) ? startDate! : `${new Date().getFullYear()}-01-01`
+    const endDateValue = isValidDate(endDate) ? endDate! : `${new Date().getFullYear()}-12-31`
+    const periodStartIso = `${startDateValue}T00:00:00.000Z`
+    const periodEndIso = `${endDateValue}T23:59:59.999Z`
 
     const { count: videoCount } = await supabaseAdmin
       .from('videos')
@@ -52,10 +65,11 @@ export async function GET(request: Request) {
       .select('id, name, employment_status')
       .neq('employment_status', 'inactive')
 
-    const { data: allVideos } = await supabaseAdmin
+    const { data: periodVideos } = await supabaseAdmin
       .from('videos')
       .select('id, primary_owner_user_id, created_at, duration_seconds, view_count')
-      .order('created_at', { ascending: false })
+      .gte('created_at', periodStartIso)
+      .lte('created_at', periodEndIso)
 
     const dayLabels = Array.from({ length: 7 }).map((_, index) => {
       const date = new Date()
@@ -92,7 +106,27 @@ export async function GET(request: Request) {
       })
     }
 
-    for (const video of allVideos || []) {
+    // 오늘 등록 수는 전체에서 계산 (기간과 별개)
+    for (const row of recentVideos || []) {
+      const ownerId = row.primary_owner_user_id
+      if (!ownerId) continue
+      if (!efficiencyMap.has(ownerId)) {
+        efficiencyMap.set(ownerId, {
+          userId: ownerId,
+          name: userNameMap[ownerId] || '이름 없음',
+          todayCount: 0,
+          periodCount: 0,
+          totalDurationSeconds: 0,
+          totalViews: 0
+        })
+      }
+      const item = efficiencyMap.get(ownerId)!
+      const createdDate = String(row.created_at || '').slice(0, 10)
+      if (createdDate === todayKey) item.todayCount += 1
+    }
+
+    // 기간 집계 (기간 등록 수/기간 업로드 시간/기간 조회수)
+    for (const video of periodVideos || []) {
       const ownerId = video.primary_owner_user_id
       if (!ownerId) continue
       if (!efficiencyMap.has(ownerId)) {
@@ -107,9 +141,7 @@ export async function GET(request: Request) {
       }
 
       const item = efficiencyMap.get(ownerId)!
-      const createdDate = String(video.created_at || '').slice(0, 10)
-      if (createdDate === todayKey) item.todayCount += 1
-      if (video.created_at && String(video.created_at) >= sinceIso) item.periodCount += 1
+      item.periodCount += 1
       item.totalDurationSeconds += video.duration_seconds || 0
       item.totalViews += video.view_count || 0
     }
@@ -120,19 +152,36 @@ export async function GET(request: Request) {
       return b.totalViews - a.totalViews
     })
 
+    const ownerLabel = (ownerId: string | null) => {
+      if (!ownerId) return '담당 없음'
+      return userNameMap[ownerId] || '이름 없음'
+    }
+
+    const groupSum = (rows: any[], valueKey: string) => {
+      const map = new Map<string, number>()
+      for (const row of rows) {
+        const label = ownerLabel(row.primary_owner_user_id)
+        const value = Number(row[valueKey] || 0)
+        map.set(label, (map.get(label) || 0) + (Number.isFinite(value) ? value : 0))
+      }
+      return Array.from(map.entries())
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10)
+        .reverse()
+    }
+
     return NextResponse.json({
       todayRegisteredCount: videoCount || 0,
       unknownIpCount: unknownIpCount || 0,
-      latest: latest || [],
+      period: { startDate: startDateValue, endDate: endDateValue },
+      latest: (latest || []).map((item) => ({
+        ...item,
+        owner_name: ownerLabel(item.primary_owner_user_id)
+      })),
       charts: {
-        viewByLatest: (latest || []).slice().reverse().map((item) => ({
-          label: item.title || item.stock_name || '제목 없음',
-          value: item.view_count || 0
-        })),
-        durationByLatest: (latest || []).slice().reverse().map((item) => ({
-          label: item.title || item.stock_name || '제목 없음',
-          value: item.duration_seconds || 0
-        })),
+        viewByLatest: groupSum(latest || [], 'view_count'),
+        durationByLatest: groupSum(latest || [], 'duration_seconds'),
         dailyRegistrations: dayLabels.map((item) => ({
           label: item.label,
           value: item.value
