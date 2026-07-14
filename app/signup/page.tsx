@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -113,10 +114,38 @@ export default function SignupPage() {
         return
       }
 
-      setMessage('회원가입이 완료되었습니다. 로그인 화면으로 이동합니다.')
-      setTimeout(() => {
-        router.push('/login')
-      }, 1000)
+      const supabase = createSupabaseBrowserClient()
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      })
+
+      if (signInError || !signInData.session?.access_token) {
+        setMessage('회원가입이 완료되었습니다. 로그인 화면으로 이동해 주세요.')
+        setTimeout(() => {
+          router.push('/login')
+        }, 1000)
+        return
+      }
+
+      await fetch('/api/auth/log-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: signInData.session.access_token })
+      })
+
+      const meRes = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${signInData.session.access_token}` }
+      })
+
+      if (!meRes.ok) {
+        setMessage('회원가입이 완료되었습니다. 자동 로그인 후 화면 이동에 실패했습니다.')
+        return
+      }
+
+      const me = (await meRes.json()) as { roleType: string }
+      setMessage('회원가입이 완료되어 자동 로그인됩니다.')
+      router.push(['super_admin', 'admin'].includes(me.roleType) ? '/admin/dashboard' : '/creator/dashboard')
     } catch (e: any) {
       setError(e?.message || '회원가입 중 오류가 발생했습니다.')
       await refresh()
