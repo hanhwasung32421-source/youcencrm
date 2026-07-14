@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getProfileByAccessToken } from '@/lib/auth'
+import { getAllowedMenuKeysForRole } from '@/lib/menu-permissions'
 
 export async function GET(request: Request) {
   try {
@@ -10,16 +11,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: '인증 토큰이 없습니다.' }, { status: 401 })
     }
 
-    const { profile } = await getProfileByAccessToken(token)
+    const { profile, supabaseAdmin } = await getProfileByAccessToken(token)
+    const allowedMenuKeys = await getAllowedMenuKeysForRole(supabaseAdmin, profile.role_type)
 
     return NextResponse.json({
       crmUserId: profile.id,
       roleType: profile.role_type,
       name: profile.name,
-      employmentStatus: profile.employment_status
+      employmentStatus: profile.employment_status,
+      allowedMenuKeys
     })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || '프로필 조회 실패' }, { status: 401 })
   }
 }
-

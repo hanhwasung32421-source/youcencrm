@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { getFirstAllowedHref, getMenuKeyByPath } from '@/lib/menu-permissions'
 
 export function AuthGuard({
   children,
@@ -12,6 +13,7 @@ export function AuthGuard({
   requireAdmin?: boolean
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
 
@@ -37,9 +39,16 @@ export function AuthGuard({
           return
         }
 
-        const me = (await res.json()) as { roleType: string }
+        const me = (await res.json()) as { roleType: string; allowedMenuKeys?: string[] }
         if (requireAdmin && !['super_admin', 'admin'].includes(me.roleType)) {
           router.replace('/creator/dashboard')
+          return
+        }
+
+        const currentMenuKey = getMenuKeyByPath(pathname)
+        const allowedMenuKeys = me.allowedMenuKeys || []
+        if (currentMenuKey && !allowedMenuKeys.includes(currentMenuKey)) {
+          router.replace(getFirstAllowedHref(allowedMenuKeys, me.roleType))
           return
         }
 
@@ -50,7 +59,7 @@ export function AuthGuard({
     }
 
     void run()
-  }, [requireAdmin, router])
+  }, [pathname, requireAdmin, router])
 
   if (error) {
     return <div className="message-error">{error}</div>
@@ -62,4 +71,3 @@ export function AuthGuard({
 
   return <>{children}</>
 }
-

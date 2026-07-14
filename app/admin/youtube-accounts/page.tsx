@@ -48,6 +48,15 @@ export default function AdminYoutubeAccountsPage() {
     setMessage('')
     setError('')
 
+    if (!accountName.trim()) {
+      setError('계정 이름을 입력해 주세요.')
+      return
+    }
+    if (!apiKey.trim()) {
+      setError('YouTube API 키를 입력해 주세요.')
+      return
+    }
+
     const supabase = createSupabaseBrowserClient()
     const {
       data: { session }
@@ -91,11 +100,11 @@ export default function AdminYoutubeAccountsPage() {
               </div>
             </div>
             <div className="field">
-              <label className="label">계정 이름</label>
+              <label className="label">계정 이름 *</label>
               <input className="input" value={accountName} onChange={(e) => setAccountName(e.target.value)} />
             </div>
             <div className="field">
-              <label className="label">YouTube API 키</label>
+              <label className="label">YouTube API 키 *</label>
               <input className="input" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
             </div>
             <div className="field">

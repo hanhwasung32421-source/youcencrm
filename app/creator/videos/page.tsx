@@ -82,6 +82,10 @@ export default function CreatorVideosPage() {
   const submit = async () => {
     setError('')
     setMessage('')
+    if (!youtubeAccountId) {
+      setError('유튜브 계정을 선택해 주세요.')
+      return
+    }
     setLoading(true)
     try {
       const accessToken = await getAccessToken()
@@ -126,7 +130,7 @@ export default function CreatorVideosPage() {
               </div>
             </div>
             <div className="field">
-              <label className="label">유튜브 계정 선택</label>
+              <label className="label">유튜브 계정 선택 *</label>
               <select className="select" value={youtubeAccountId} onChange={(e) => setYoutubeAccountId(e.target.value)}>
                 <option value="">유튜브 계정을 선택하세요</option>
                 {youtubeAccounts.map((account) => (
@@ -137,22 +141,22 @@ export default function CreatorVideosPage() {
               </select>
             </div>
             <div className="field">
-              <label className="label">유튜브 영상 주소</label>
+              <label className="label">유튜브 영상 주소 *</label>
               <input className="input" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} />
             </div>
             <div className="field">
-              <label className="label">콘텐츠 형식</label>
+              <label className="label">콘텐츠 형식 *</label>
               <select className="select" value={contentType} onChange={(e) => setContentType(e.target.value as 'longform' | 'shortform')}>
                 <option value="longform">롱폼</option>
                 <option value="shortform">숏폼</option>
               </select>
             </div>
             <div className="field">
-              <label className="label">주요 종목명</label>
+              <label className="label">주요 종목명 *</label>
               <input className="input" value={stockName} onChange={(e) => setStockName(e.target.value)} />
             </div>
             <div className="field">
-              <label className="label">카테고리</label>
+              <label className="label">비고</label>
               <input className="input" value={contentCategory} onChange={(e) => setContentCategory(e.target.value)} />
             </div>
             <button className="button" disabled={loading} onClick={submit}>작성 버튼</button>

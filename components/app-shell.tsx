@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { DEFAULT_ROLE_MENU_KEYS, MENU_DEFINITIONS } from '@/lib/menu-permissions'
 
 type Me = {
   name: string
   roleType: string
+  allowedMenuKeys?: string[]
 }
 
 export function AppShell({
@@ -37,7 +39,7 @@ export function AppShell({
         })
         if (!res.ok) return
         const data = (await res.json()) as Me & { crmUserId: string; employmentStatus: string }
-        setMe({ name: data.name, roleType: data.roleType })
+        setMe({ name: data.name, roleType: data.roleType, allowedMenuKeys: data.allowedMenuKeys || [] })
       } catch {}
     }
 
@@ -50,18 +52,15 @@ export function AppShell({
     router.replace('/login')
   }
 
-  const isAdmin = me ? ['super_admin', 'admin'].includes(me.roleType) : pathname.startsWith('/admin')
-  const navItems = isAdmin
-    ? [
-        { href: '/admin/dashboard', label: '대시보드' },
-        { href: '/admin/users', label: '직급 관리' },
-        { href: '/admin/attendance', label: '근태 관리' },
-        { href: '/admin/youtube-accounts', label: '유튜브 계정' }
-      ]
-    : [
-        { href: '/creator/dashboard', label: '대시보드' },
-        { href: '/creator/videos', label: '영상 등록' }
-      ]
+  const effectiveRoleType = me?.roleType || (pathname.startsWith('/admin') ? 'admin' : 'staff')
+  const allowedMenuKeys =
+    me?.allowedMenuKeys && me.allowedMenuKeys.length > 0
+      ? me.allowedMenuKeys
+      : DEFAULT_ROLE_MENU_KEYS[(effectiveRoleType as keyof typeof DEFAULT_ROLE_MENU_KEYS) || 'staff'] || []
+  const isAdmin = pathname.startsWith('/admin') || ['super_admin', 'admin'].includes(effectiveRoleType)
+  const navItems = MENU_DEFINITIONS.filter((menu) => allowedMenuKeys.includes(menu.key)).filter((menu) =>
+    isAdmin ? menu.audience === 'admin' : menu.audience === 'creator'
+  )
 
   return (
     <div className="workspace">

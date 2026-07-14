@@ -5,7 +5,7 @@ import { fetchYoutubeVideoMeta } from '@/lib/youtube'
 
 const bodySchema = z.object({
   accessToken: z.string().min(10),
-  youtubeAccountId: z.string().uuid(),
+  youtubeAccountId: z.string().min(1, '유튜브 계정을 선택해 주세요.'),
   youtubeUrl: z.string().url(),
   contentType: z.enum(['longform', 'shortform']),
   stockName: z.string().min(1),
@@ -15,6 +15,9 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = bodySchema.parse(await request.json())
+    if (!/^[0-9a-fA-F-]{36}$/.test(body.youtubeAccountId)) {
+      return NextResponse.json({ error: '유튜브 계정을 다시 선택해 주세요.' }, { status: 400 })
+    }
     const { profile, supabaseAdmin } = await getProfileByAccessToken(body.accessToken)
 
     const { data: youtubeAccount, error: youtubeAccountError } = await supabaseAdmin
@@ -116,7 +119,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, video: insertedVideo })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '영상 저장 실패' }, { status: 500 })
+    const firstIssue = e?.issues?.[0]
+    return NextResponse.json({ error: firstIssue?.message || e?.message || '영상 저장 실패' }, { status: 500 })
   }
 }
-

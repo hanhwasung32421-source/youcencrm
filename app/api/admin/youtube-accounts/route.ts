@@ -4,8 +4,8 @@ import { requireAdmin } from '@/lib/auth'
 
 const bodySchema = z.object({
   accessToken: z.string().min(10),
-  accountName: z.string().min(1),
-  apiKey: z.string().min(10),
+  accountName: z.string().min(1, '계정 이름을 입력해 주세요.'),
+  apiKey: z.string().min(1, 'YouTube API 키를 입력해 주세요.'),
   channelId: z.string().optional().nullable(),
   channelName: z.string().optional().nullable()
 })
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, id: data.id })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '유튜브 계정 저장 실패' }, { status: 500 })
+    const firstIssue = e?.issues?.[0]
+    return NextResponse.json({ error: firstIssue?.message || e?.message || '유튜브 계정 저장 실패' }, { status: 500 })
   }
 }
-
