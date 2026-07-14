@@ -25,6 +25,7 @@ export function AppShell({
   const router = useRouter()
   const pathname = usePathname()
   const [me, setMe] = useState<Me | null>(null)
+  const [checkingOut, setCheckingOut] = useState(false)
 
   useEffect(() => {
     const run = async () => {
@@ -58,6 +59,35 @@ export function AppShell({
     router.replace('/login')
   }
 
+  const checkoutAndLogout = async () => {
+    setCheckingOut(true)
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        await logout()
+        return
+      }
+
+      const res = await fetch('/api/attendance/checkout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        alert(data?.error || '퇴근 처리에 실패했습니다.')
+        return
+      }
+
+      await supabase.auth.signOut()
+      router.replace('/login')
+    } finally {
+      setCheckingOut(false)
+    }
+  }
+
   const effectiveRoleType = me?.roleType || (pathname.startsWith('/admin') ? 'admin' : 'staff')
   const allowedMenuKeys =
     me?.allowedMenuKeys && me.allowedMenuKeys.length > 0
@@ -88,9 +118,9 @@ export function AppShell({
           <div className="sidebar-caption">account</div>
           {me ? <div className="pill small">{me.name} · {me.roleName || me.roleType}</div> : null}
           <div className="stack" style={{ marginTop: 12 }}>
-            <Link className="sidebar-link" href="/">
-              <span>홈으로</span>
-            </Link>
+            <button className="button secondary" disabled={checkingOut} onClick={checkoutAndLogout}>
+              퇴근
+            </button>
             <button className="button secondary" onClick={logout}>
               로그아웃
             </button>

@@ -1,7 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { BUILD_VERSION } from '@/lib/generated-version'
-import { TopbarActions } from '@/components/topbar-actions'
 
 export const metadata: Metadata = {
   title: '여왕개미미디어 CRM',
@@ -22,7 +21,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <div className="brand-sub">DB통계 CRM</div>
                 </div>
               </div>
-              <TopbarActions />
             </div>
           </header>
           <main className="container page">{children}</main>
