@@ -5,13 +5,6 @@ import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-type YoutubeAccountItem = {
-  id: string
-  account_name: string
-  channel_id: string | null
-  channel_name: string | null
-}
-
 type VideoItem = {
   id: string
   title: string | null
@@ -24,9 +17,7 @@ type VideoItem = {
 }
 
 export default function CreatorVideosPage() {
-  const [youtubeAccounts, setYoutubeAccounts] = useState<YoutubeAccountItem[]>([])
   const [items, setItems] = useState<VideoItem[]>([])
-  const [youtubeAccountId, setYoutubeAccountId] = useState('')
   const [youtubeUrl, setYoutubeUrl] = useState('')
   const [contentType, setContentType] = useState<'longform' | 'shortform'>('longform')
   const [stockName, setStockName] = useState('')
@@ -41,23 +32,6 @@ export default function CreatorVideosPage() {
       data: { session }
     } = await supabase.auth.getSession()
     return session?.access_token || ''
-  }
-
-  const loadYoutubeAccounts = async () => {
-    const accessToken = await getAccessToken()
-    if (!accessToken) return
-    const res = await fetch('/api/youtube-accounts/available', {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      setError(data?.error || '유튜브 계정 목록 조회 실패')
-      return
-    }
-    setYoutubeAccounts(data.items || [])
-    if (!youtubeAccountId && data.items?.[0]?.id) {
-      setYoutubeAccountId(data.items[0].id)
-    }
   }
 
   const loadMyVideos = async () => {
@@ -75,17 +49,12 @@ export default function CreatorVideosPage() {
   }
 
   useEffect(() => {
-    void loadYoutubeAccounts()
     void loadMyVideos()
   }, [])
 
   const submit = async () => {
     setError('')
     setMessage('')
-    if (!youtubeAccountId) {
-      setError('유튜브 계정을 선택해 주세요.')
-      return
-    }
     setLoading(true)
     try {
       const accessToken = await getAccessToken()
@@ -94,7 +63,6 @@ export default function CreatorVideosPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           accessToken,
-          youtubeAccountId,
           youtubeUrl,
           contentType,
           stockName,
@@ -129,16 +97,11 @@ export default function CreatorVideosPage() {
                 <p className="panel-subtitle">계정 선택 후 영상 URL과 핵심 분류만 입력하면 CRM 문서가 생성됩니다.</p>
               </div>
             </div>
-            <div className="field">
-              <label className="label">유튜브 계정 선택 *</label>
-              <select className="select" value={youtubeAccountId} onChange={(e) => setYoutubeAccountId(e.target.value)}>
-                <option value="">유튜브 계정을 선택하세요</option>
-                {youtubeAccounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.account_name}{account.channel_name ? ` · ${account.channel_name}` : ''}
-                  </option>
-                ))}
-              </select>
+            <div className="panel soft">
+              <div className="panel-title">연결 유튜브 계정</div>
+              <p className="panel-subtitle" style={{ marginTop: 8 }}>
+                개미들의 주식노트 계정이 자동으로 연결됩니다.
+              </p>
             </div>
             <div className="field">
               <label className="label">유튜브 영상 주소 *</label>

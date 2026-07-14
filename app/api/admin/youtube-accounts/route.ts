@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireAdmin } from '@/lib/auth'
+import { ensureDefaultYoutubeAccount } from '@/lib/default-youtube-account'
 
 const bodySchema = z.object({
   accessToken: z.string().min(10),
@@ -15,6 +16,7 @@ export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization') || ''
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
     const { supabaseAdmin } = await requireAdmin(token)
+    await ensureDefaultYoutubeAccount(supabaseAdmin)
 
     const { data, error } = await supabaseAdmin
       .from('youtube_accounts')

@@ -24,6 +24,9 @@ export function AppShell({
   const router = useRouter()
   const pathname = usePathname()
   const [me, setMe] = useState<Me | null>(null)
+  const [topMessage, setTopMessage] = useState('')
+  const [topError, setTopError] = useState('')
+  const [checkingOut, setCheckingOut] = useState(false)
 
   useEffect(() => {
     const run = async () => {
@@ -50,6 +53,32 @@ export function AppShell({
     const supabase = createSupabaseBrowserClient()
     await supabase.auth.signOut()
     router.replace('/login')
+  }
+
+  const checkout = async () => {
+    setTopMessage('')
+    setTopError('')
+    setCheckingOut(true)
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const res = await fetch('/api/attendance/checkout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setTopError(data?.error || '퇴근 등록 실패')
+        return
+      }
+      setTopMessage('퇴근 시간이 등록되었습니다.')
+    } finally {
+      setCheckingOut(false)
+    }
   }
 
   const effectiveRoleType = me?.roleType || (pathname.startsWith('/admin') ? 'admin' : 'staff')
@@ -107,8 +136,15 @@ export function AppShell({
             <div>
               <h1 className="page-title">{title}</h1>
               {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
+              {topMessage ? <div className="message-success small" style={{ marginTop: 12 }}>{topMessage}</div> : null}
+              {topError ? <div className="message-error small" style={{ marginTop: 12 }}>{topError}</div> : null}
             </div>
-            <div className="page-badge">{isAdmin ? '관리자 작업 공간' : '유튜버 작업 공간'}</div>
+            <div className="stack" style={{ alignItems: 'flex-end' }}>
+              <div className="page-badge">{isAdmin ? '관리자 작업 공간' : '유튜버 작업 공간'}</div>
+              <button className="button secondary" disabled={checkingOut} onClick={checkout}>
+                퇴근
+              </button>
+            </div>
           </div>
         </div>
         {children}

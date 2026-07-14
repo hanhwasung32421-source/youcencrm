@@ -35,14 +35,53 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: daysError.message }, { status: 500 })
     }
 
+    const dayIds = (days || []).map((day) => day.id)
+    const { data: events, error: eventsError } = dayIds.length
+      ? await supabaseAdmin
+          .from('attendance_events')
+          .select('id, attendance_day_id, event_type, occurred_at, source, note')
+          .in('attendance_day_id', dayIds)
+          .order('occurred_at', { ascending: false })
+      : { data: [], error: null as any }
+
+    if (eventsError) {
+      return NextResponse.json({ error: eventsError.message }, { status: 500 })
+    }
+
+    const today = new Date().toISOString().slice(0, 10)
+    const todayDays = (days || []).filter((day) => day.work_date === today)
+    const todayStatusBuckets = {
+      present: [] as string[],
+      late: [] as string[],
+      vacation: [] as string[],
+      early_leave: [] as string[],
+      not_registered: [] as string[]
+    }
+
+    for (const user of users || []) {
+      const todayDay = todayDays.find((day) => day.user_id === user.id)
+      if (!todayDay || todayDay.attendance_status === 'not_started') {
+        todayStatusBuckets.not_registered.push(user.name)
+      } else if (todayDay.attendance_status === 'present') {
+        todayStatusBuckets.present.push(user.name)
+      } else if (todayDay.attendance_status === 'late') {
+        todayStatusBuckets.late.push(user.name)
+      } else if (todayDay.attendance_status === 'vacation') {
+        todayStatusBuckets.vacation.push(user.name)
+      } else if (todayDay.attendance_status === 'early_leave') {
+        todayStatusBuckets.early_leave.push(user.name)
+      }
+    }
+
     return NextResponse.json({
       period,
       startDate: start,
       users: users || [],
-      days: days || []
+      days: days || [],
+      events: events || [],
+      todayStatusBuckets
     })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || '근태 조회 실패' }, { status: 500 })
   }
 }
-

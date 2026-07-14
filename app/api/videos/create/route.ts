@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getProfileByAccessToken } from '@/lib/auth'
 import { extractYoutubeVideoId, fetchYoutubeVideoMeta } from '@/lib/youtube'
+import { ensureDefaultYoutubeAccount } from '@/lib/default-youtube-account'
 
 const bodySchema = z.object({
   accessToken: z.string().min(10),
-  youtubeAccountId: z.string().min(1, '유튜브 계정을 선택해 주세요.'),
   youtubeUrl: z.string().url(),
   contentType: z.enum(['longform', 'shortform']),
   stockName: z.string().min(1),
@@ -15,21 +15,8 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = bodySchema.parse(await request.json())
-    if (!/^[0-9a-fA-F-]{36}$/.test(body.youtubeAccountId)) {
-      return NextResponse.json({ error: '유튜브 계정을 다시 선택해 주세요.' }, { status: 400 })
-    }
     const { profile, supabaseAdmin } = await getProfileByAccessToken(body.accessToken)
-
-    const { data: youtubeAccount, error: youtubeAccountError } = await supabaseAdmin
-      .from('youtube_accounts')
-      .select('id, account_name, api_key, api_active, channel_id, channel_name')
-      .eq('id', body.youtubeAccountId)
-      .eq('is_active', true)
-      .maybeSingle()
-
-    if (youtubeAccountError || !youtubeAccount) {
-      return NextResponse.json({ error: '선택한 유튜브 계정을 찾을 수 없습니다.' }, { status: 404 })
-    }
+    const youtubeAccount = await ensureDefaultYoutubeAccount(supabaseAdmin)
 
     const apiActive = Boolean((youtubeAccount as any).api_active)
     const apiKey = String((youtubeAccount as any).api_key || '').trim()
