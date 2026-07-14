@@ -10,22 +10,21 @@ type UserItem = {
   name: string
   email: string
   role_type: string
+  role_code: string
+  role_name: string
   employment_status: string
 }
 
-const roles = [
-  { value: 'super_admin', label: '총 관리자' },
-  { value: 'admin', label: '관리자' },
-  { value: 'general_manager', label: '부장' },
-  { value: 'manager', label: '과장' },
-  { value: 'assistant_manager', label: '대리' },
-  { value: 'senior_staff', label: '주임' },
-  { value: 'staff', label: '직원' },
-  { value: 'retired', label: '퇴사' }
-]
+type RoleItem = {
+  code: string
+  name: string
+}
 
 export default function AdminUsersPage() {
   const [items, setItems] = useState<UserItem[]>([])
+  const [roles, setRoles] = useState<RoleItem[]>([])
+  const [newRoleName, setNewRoleName] = useState('')
+  const [newRoleCode, setNewRoleCode] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -36,20 +35,65 @@ export default function AdminUsersPage() {
     } = await supabase.auth.getSession()
     if (!session?.access_token) return
 
-    const res = await fetch('/api/admin/users', {
-      headers: { Authorization: `Bearer ${session.access_token}` }
-    })
-    const data = await res.json()
-    if (!res.ok) {
+    const [usersRes, rolesRes] = await Promise.all([
+      fetch('/api/admin/users', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      }),
+      fetch('/api/admin/roles', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      })
+    ])
+    const data = await usersRes.json()
+    const rolesData = await rolesRes.json().catch(() => ({}))
+    if (!usersRes.ok) {
       setError(data?.error || '직원 목록 조회 실패')
       return
     }
+    if (!rolesRes.ok) {
+      setError(rolesData?.error || '직급 목록 조회 실패')
+      return
+    }
     setItems(data.items || [])
+    setRoles(rolesData.items || [])
   }
 
   useEffect(() => {
     void loadUsers()
   }, [])
+
+  const addRole = async () => {
+    setMessage('')
+    setError('')
+
+    const supabase = createSupabaseBrowserClient()
+    const {
+      data: { session }
+    } = await supabase.auth.getSession()
+    if (!session?.access_token) return
+
+    const res = await fetch('/api/admin/roles', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        accessToken: session.access_token,
+        code: newRoleCode || newRoleName,
+        name: newRoleName
+      })
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setError(data?.error || '직급 추가 실패')
+      return
+    }
+
+    setNewRoleName('')
+    setNewRoleCode('')
+    setMessage('직급이 추가되었습니다. 기본 메뉴 권한은 없습니다.')
+    await loadUsers()
+  }
 
   const saveRole = async (userId: string, roleType: string) => {
     setMessage('')
@@ -102,26 +146,47 @@ export default function AdminUsersPage() {
                   <div className="row">
                     <select
                       className="select"
-                      value={user.role_type}
+                      value={user.role_code}
                       onChange={(e) => {
                         const next = [...items]
-                        next[index] = { ...user, role_type: e.target.value }
+                        const role = roles.find((item) => item.code === e.target.value)
+                        next[index] = {
+                          ...user,
+                          role_code: e.target.value,
+                          role_name: role?.name || e.target.value
+                        }
                         setItems(next)
                       }}
                     >
                       {roles.map((role) => (
-                        <option key={role.value} value={role.value}>
-                          {role.label}
+                        <option key={role.code} value={role.code}>
+                          {role.name}
                         </option>
                       ))}
                     </select>
-                    <button className="button" onClick={() => saveRole(user.id, user.role_type)}>
+                    <button className="button" onClick={() => saveRole(user.id, user.role_code)}>
                       직급 저장
                     </button>
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+          <div className="panel soft" style={{ marginTop: 16 }}>
+            <div className="panel-title">직급 추가</div>
+            <div className="grid grid-2" style={{ marginTop: 16 }}>
+              <div className="field">
+                <label className="label">직급 이름</label>
+                <input className="input" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="label">직급 코드(선택)</label>
+                <input className="input" value={newRoleCode} onChange={(e) => setNewRoleCode(e.target.value)} />
+              </div>
+            </div>
+            <button className="button" style={{ marginTop: 12 }} onClick={addRole}>
+              직급 추가
+            </button>
           </div>
           {message ? <div className="message-success small" style={{ marginTop: 16 }}>{message}</div> : null}
           {error ? <div className="message-error small" style={{ marginTop: 16 }}>{error}</div> : null}

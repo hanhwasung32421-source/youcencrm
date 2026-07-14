@@ -12,7 +12,7 @@ export async function getProfileByAccessToken(accessToken: string) {
   const supabaseAdmin = createSupabaseAdminClient()
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('crm_users')
-    .select('id, name, email, role_type, employment_status')
+    .select('id, name, email, role_type, custom_role_code, employment_status')
     .eq('auth_user_id', userData.user.id)
     .maybeSingle()
 
@@ -31,4 +31,3 @@ export async function requireAdmin(accessToken: string) {
 
   return { profile, supabaseAdmin, user }
 }
-

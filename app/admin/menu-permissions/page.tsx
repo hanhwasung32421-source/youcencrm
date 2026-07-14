@@ -4,24 +4,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
-import { MENU_DEFINITIONS, ROLE_TYPES } from '@/lib/menu-permissions'
+import { MENU_DEFINITIONS } from '@/lib/menu-permissions'
 
-type RoleType = (typeof ROLE_TYPES)[number]
 type MenuItem = (typeof MENU_DEFINITIONS)[number]
-
-const roleLabels: Record<RoleType, string> = {
-  super_admin: '총 관리자',
-  admin: '관리자',
-  general_manager: '부장',
-  manager: '과장',
-  assistant_manager: '대리',
-  senior_staff: '주임',
-  staff: '직원',
-  retired: '퇴사'
+type RoleItem = {
+  code: string
+  name: string
 }
 
 export default function AdminMenuPermissionsPage() {
-  const [selectedRole, setSelectedRole] = useState<RoleType>('staff')
+  const [selectedRole, setSelectedRole] = useState('staff')
+  const [roles, setRoles] = useState<RoleItem[]>([])
   const [items, setItems] = useState<Record<string, string[]>>({})
   const [menus, setMenus] = useState<MenuItem[]>([...MENU_DEFINITIONS])
   const [message, setMessage] = useState('')
@@ -44,6 +37,7 @@ export default function AdminMenuPermissionsPage() {
       return
     }
 
+    setRoles(data.roles || [])
     setMenus(data.menus || [...MENU_DEFINITIONS])
     setItems(data.items || {})
   }
@@ -106,10 +100,10 @@ export default function AdminMenuPermissionsPage() {
                 <p className="panel-subtitle">먼저 역할을 고른 뒤, 표시할 메뉴를 체크해 주세요.</p>
               </div>
             </div>
-            <select className="select" value={selectedRole} onChange={(e) => setSelectedRole(e.target.value as RoleType)}>
-              {ROLE_TYPES.map((role) => (
-                <option key={role} value={role}>
-                  {roleLabels[role]}
+            <select className="select" value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
+              {roles.map((role) => (
+                <option key={role.code} value={role.code}>
+                  {role.name}
                 </option>
               ))}
             </select>
@@ -146,7 +140,9 @@ export default function AdminMenuPermissionsPage() {
             <div className="panel-header">
               <div>
                 <div className="panel-title">현재 선택 요약</div>
-                <p className="panel-subtitle">{roleLabels[selectedRole]} 역할에 표시될 메뉴 목록입니다.</p>
+                <p className="panel-subtitle">
+                  {(roles.find((role) => role.code === selectedRole)?.name || selectedRole)} 역할에 표시될 메뉴 목록입니다.
+                </p>
               </div>
             </div>
             <div className="list" style={{ marginTop: 16 }}>
@@ -169,4 +165,3 @@ export default function AdminMenuPermissionsPage() {
     </AuthGuard>
   )
 }
-

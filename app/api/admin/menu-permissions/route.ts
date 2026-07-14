@@ -3,9 +3,6 @@ import { z } from 'zod'
 import { requireAdmin } from '@/lib/auth'
 import {
   MENU_DEFINITIONS,
-  ROLE_TYPES,
-  getDefaultRoleMenuMap,
-  isRoleType,
   loadRoleMenuMap
 } from '@/lib/menu-permissions'
 
@@ -26,8 +23,9 @@ export async function GET(request: Request) {
     }
 
     const roleMenuMap = await loadRoleMenuMap(supabaseAdmin)
+    const { data: roles } = await supabaseAdmin.from('roles').select('code, name').order('created_at', { ascending: true })
     return NextResponse.json({
-      roles: ROLE_TYPES,
+      roles: roles || [],
       menus: MENU_DEFINITIONS,
       items: roleMenuMap
     })
@@ -44,14 +42,15 @@ export async function POST(request: Request) {
     if (profile.role_type !== 'super_admin') {
       return NextResponse.json({ error: '총 관리자만 메뉴 권한을 저장할 수 있습니다.' }, { status: 403 })
     }
-    if (!isRoleType(body.roleType)) {
+
+    const { data: roleRow } = await supabaseAdmin.from('roles').select('code').eq('code', body.roleType).maybeSingle()
+    if (!roleRow) {
       return NextResponse.json({ error: '유효하지 않은 역할입니다.' }, { status: 400 })
     }
 
     const validMenuKeys = MENU_DEFINITIONS.map((menu) => menu.key)
     const nextMenuKeys = body.menuKeys.filter((key) => validMenuKeys.includes(key as never))
 
-    const defaults = getDefaultRoleMenuMap()
     const rows = validMenuKeys.map((menuKey) => ({
       role_type: body.roleType,
       menu_key: menuKey,
@@ -63,21 +62,29 @@ export async function POST(request: Request) {
     })
 
     if (error) {
-      const fallback = defaults[body.roleType]
       return NextResponse.json(
         {
           error: error.message.includes('role_menu_permissions')
             ? '메뉴 권한 테이블이 없습니다. SQL 파일을 먼저 실행해 주세요.'
-            : error.message,
-          fallback
+            : error.message
         },
         { status: 500 }
       )
     }
+
+    await supabaseAdmin.from('audit_logs').insert({
+      actor_user_id: profile.id,
+      action_type: 'save_menu_permissions',
+      target_type: 'role',
+      target_id: body.roleType,
+      diff_summary: {
+        role_type: body.roleType,
+        menu_keys: nextMenuKeys
+      }
+    })
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || '메뉴 권한 저장 실패' }, { status: 500 })
   }
 }
-

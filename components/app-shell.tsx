@@ -9,6 +9,7 @@ import { DEFAULT_ROLE_MENU_KEYS, MENU_DEFINITIONS } from '@/lib/menu-permissions
 type Me = {
   name: string
   roleType: string
+  roleName?: string
   allowedMenuKeys?: string[]
 }
 
@@ -24,9 +25,6 @@ export function AppShell({
   const router = useRouter()
   const pathname = usePathname()
   const [me, setMe] = useState<Me | null>(null)
-  const [topMessage, setTopMessage] = useState('')
-  const [topError, setTopError] = useState('')
-  const [checkingOut, setCheckingOut] = useState(false)
 
   useEffect(() => {
     const run = async () => {
@@ -42,7 +40,12 @@ export function AppShell({
         })
         if (!res.ok) return
         const data = (await res.json()) as Me & { crmUserId: string; employmentStatus: string }
-        setMe({ name: data.name, roleType: data.roleType, allowedMenuKeys: data.allowedMenuKeys || [] })
+        setMe({
+          name: data.name,
+          roleType: data.roleType,
+          roleName: data.roleName || data.roleType,
+          allowedMenuKeys: data.allowedMenuKeys || []
+        })
       } catch {}
     }
 
@@ -55,41 +58,13 @@ export function AppShell({
     router.replace('/login')
   }
 
-  const checkout = async () => {
-    setTopMessage('')
-    setTopError('')
-    setCheckingOut(true)
-    try {
-      const supabase = createSupabaseBrowserClient()
-      const {
-        data: { session }
-      } = await supabase.auth.getSession()
-      if (!session?.access_token) return
-
-      const res = await fetch('/api/attendance/checkout', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setTopError(data?.error || '퇴근 등록 실패')
-        return
-      }
-      setTopMessage('퇴근 시간이 등록되었습니다.')
-    } finally {
-      setCheckingOut(false)
-    }
-  }
-
   const effectiveRoleType = me?.roleType || (pathname.startsWith('/admin') ? 'admin' : 'staff')
   const allowedMenuKeys =
     me?.allowedMenuKeys && me.allowedMenuKeys.length > 0
       ? me.allowedMenuKeys
       : DEFAULT_ROLE_MENU_KEYS[(effectiveRoleType as keyof typeof DEFAULT_ROLE_MENU_KEYS) || 'staff'] || []
   const isAdmin = pathname.startsWith('/admin') || ['super_admin', 'admin'].includes(effectiveRoleType)
-  const navItems = MENU_DEFINITIONS.filter((menu) => allowedMenuKeys.includes(menu.key)).filter((menu) =>
-    isAdmin ? menu.audience === 'admin' : menu.audience === 'creator'
-  )
+  const navItems = MENU_DEFINITIONS.filter((menu) => allowedMenuKeys.includes(menu.key))
 
   return (
     <div className="workspace">
@@ -111,7 +86,7 @@ export function AppShell({
 
         <div className="sidebar-section">
           <div className="sidebar-caption">account</div>
-          {me ? <div className="pill small">{me.name} · {me.roleType}</div> : null}
+          {me ? <div className="pill small">{me.name} · {me.roleName || me.roleType}</div> : null}
           <div className="stack" style={{ marginTop: 12 }}>
             <Link className="sidebar-link" href="/">
               <span>홈으로</span>
@@ -136,15 +111,8 @@ export function AppShell({
             <div>
               <h1 className="page-title">{title}</h1>
               {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
-              {topMessage ? <div className="message-success small" style={{ marginTop: 12 }}>{topMessage}</div> : null}
-              {topError ? <div className="message-error small" style={{ marginTop: 12 }}>{topError}</div> : null}
             </div>
-            <div className="stack" style={{ alignItems: 'flex-end' }}>
-              <div className="page-badge">{isAdmin ? '관리자 작업 공간' : '유튜버 작업 공간'}</div>
-              <button className="button secondary" disabled={checkingOut} onClick={checkout}>
-                퇴근
-              </button>
-            </div>
+            <div className="page-badge">{isAdmin ? '관리자 작업 공간' : '유튜버 작업 공간'}</div>
           </div>
         </div>
         {children}

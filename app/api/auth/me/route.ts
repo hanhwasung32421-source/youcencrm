@@ -12,11 +12,19 @@ export async function GET(request: Request) {
     }
 
     const { profile, supabaseAdmin } = await getProfileByAccessToken(token)
-    const allowedMenuKeys = await getAllowedMenuKeysForRole(supabaseAdmin, profile.role_type)
+    const effectiveRoleCode = profile.custom_role_code || profile.role_type
+    const allowedMenuKeys = await getAllowedMenuKeysForRole(supabaseAdmin, effectiveRoleCode)
+    const { data: roleRow } = await supabaseAdmin
+      .from('roles')
+      .select('name')
+      .eq('code', effectiveRoleCode)
+      .maybeSingle()
 
     return NextResponse.json({
       crmUserId: profile.id,
       roleType: profile.role_type,
+      roleCode: effectiveRoleCode,
+      roleName: roleRow?.name || effectiveRoleCode,
       name: profile.name,
       employmentStatus: profile.employment_status,
       allowedMenuKeys

@@ -11,6 +11,9 @@ alter table public.crm_users
 alter table public.crm_users
   add column if not exists phone text;
 
+alter table public.crm_users
+  add column if not exists custom_role_code text;
+
 update public.crm_users
 set login_id = split_part(email, '@', 1)
 where (login_id is null or login_id = '');
@@ -19,6 +22,20 @@ create unique index if not exists crm_users_login_id_uniq on public.crm_users (l
 
 alter table public.crm_users
   alter column login_id set not null;
+
+-- 기본 직급 시드 보강
+insert into public.roles (code, name)
+values
+  ('super_admin', '총 관리자'),
+  ('admin', '관리자'),
+  ('general_manager', '부장'),
+  ('manager', '과장'),
+  ('assistant_manager', '대리'),
+  ('senior_staff', '주임'),
+  ('staff', '직원'),
+  ('retired', '퇴사')
+on conflict (code) do update
+set name = excluded.name;
 
 -- 2) 역할별 메뉴 권한
 create table if not exists public.role_menu_permissions (
@@ -70,4 +87,3 @@ alter table public.youtube_accounts
 
 alter table public.youtube_accounts
   add column if not exists api_last_checked_at timestamptz null;
-

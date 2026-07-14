@@ -17,12 +17,39 @@ type AttendanceDay = {
   user_id: string
   work_date: string
   attendance_status: string
+  check_in_at: string | null
+  check_out_at: string | null
+}
+
+type AttendanceEvent = {
+  id: string
+  attendance_day_id: string
+  event_type: string
+  occurred_at: string
+  source: string
+  note: string | null
+}
+
+type TodayStatusBuckets = {
+  present: string[]
+  late: string[]
+  vacation: string[]
+  early_leave: string[]
+  not_registered: string[]
 }
 
 export default function AdminAttendancePage() {
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('day')
   const [users, setUsers] = useState<UserItem[]>([])
   const [days, setDays] = useState<AttendanceDay[]>([])
+  const [events, setEvents] = useState<AttendanceEvent[]>([])
+  const [todayStatusBuckets, setTodayStatusBuckets] = useState<TodayStatusBuckets>({
+    present: [],
+    late: [],
+    vacation: [],
+    early_leave: [],
+    not_registered: []
+  })
   const [selectedUserId, setSelectedUserId] = useState('')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
   const [message, setMessage] = useState('')
@@ -46,6 +73,16 @@ export default function AdminAttendancePage() {
 
     setUsers(data.users || [])
     setDays(data.days || [])
+    setEvents(data.events || [])
+    setTodayStatusBuckets(
+      data.todayStatusBuckets || {
+        present: [],
+        late: [],
+        vacation: [],
+        early_leave: [],
+        not_registered: []
+      }
+    )
     if (!selectedUserId && data.users?.[0]?.id) {
       setSelectedUserId(data.users[0].id)
     }
@@ -56,6 +93,20 @@ export default function AdminAttendancePage() {
   }, [period])
 
   const selectedDays = useMemo(() => days.filter((day) => day.user_id === selectedUserId), [days, selectedUserId])
+  const selectedEvents = useMemo(() => {
+    const selectedDayIds = new Set(selectedDays.map((day) => day.id))
+    return events.filter((event) => selectedDayIds.has(event.attendance_day_id))
+  }, [events, selectedDays])
+
+  const summary = useMemo(() => {
+    const base = { present: 0, late: 0, vacation: 0, early_leave: 0, not_started: 0 }
+    for (const day of selectedDays) {
+      if (day.attendance_status in base) {
+        base[day.attendance_status as keyof typeof base] += 1
+      }
+    }
+    return base
+  }, [selectedDays])
 
   const setAttendance = async (attendanceStatus: 'present' | 'late' | 'vacation' | 'early_leave') => {
     setMessage('')
@@ -87,6 +138,17 @@ export default function AdminAttendancePage() {
     await loadData()
   }
 
+  const formatDateTime = (value: string | null) => {
+    if (!value) return '-'
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return value
+    return `${d.toLocaleDateString('ko-KR')} ${d.toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })}`
+  }
+
   return (
     <AuthGuard requireAdmin>
       <AppShell title="근태 관리" subtitle="직원을 선택해 출근, 지각, 휴가, 조퇴를 기록할 수 있습니다.">
@@ -94,6 +156,32 @@ export default function AdminAttendancePage() {
           <button className={`button ${period === 'day' ? '' : 'secondary'}`} onClick={() => setPeriod('day')}>일별</button>
           <button className={`button ${period === 'week' ? '' : 'secondary'}`} onClick={() => setPeriod('week')}>주별</button>
           <button className={`button ${period === 'month' ? '' : 'secondary'}`} onClick={() => setPeriod('month')}>월별</button>
+        </div>
+
+        <div className="grid grid-4">
+          <div className="metric-card">
+            <div className="card-title">오늘 출근</div>
+            <div className="card-meta">{todayStatusBuckets.present.join(', ') || '없음'}</div>
+          </div>
+          <div className="metric-card">
+            <div className="card-title">오늘 지각</div>
+            <div className="card-meta">{todayStatusBuckets.late.join(', ') || '없음'}</div>
+          </div>
+          <div className="metric-card">
+            <div className="card-title">오늘 휴가</div>
+            <div className="card-meta">{todayStatusBuckets.vacation.join(', ') || '없음'}</div>
+          </div>
+          <div className="metric-card">
+            <div className="card-title">오늘 조퇴</div>
+            <div className="card-meta">{todayStatusBuckets.early_leave.join(', ') || '없음'}</div>
+          </div>
+        </div>
+
+        <div className="panel soft">
+          <div className="panel-title">오늘 등록안됨</div>
+          <div className="panel-subtitle" style={{ marginTop: 8 }}>
+            {todayStatusBuckets.not_registered.join(', ') || '없음'}
+          </div>
         </div>
 
         <div className="grid grid-2">
@@ -137,11 +225,32 @@ export default function AdminAttendancePage() {
               <button className="button danger" onClick={() => setAttendance('early_leave')}>조퇴</button>
             </div>
 
+            {period !== 'day' ? (
+              <div className="grid grid-4">
+                <div className="metric-card">
+                  <div className="card-title">{period === 'week' ? '주간 출근' : '월간 출근'}</div>
+                  <div className="card-value">{summary.present}</div>
+                </div>
+                <div className="metric-card">
+                  <div className="card-title">{period === 'week' ? '주간 지각' : '월간 지각'}</div>
+                  <div className="card-value">{summary.late}</div>
+                </div>
+                <div className="metric-card">
+                  <div className="card-title">{period === 'week' ? '주간 휴가' : '월간 휴가'}</div>
+                  <div className="card-value">{summary.vacation}</div>
+                </div>
+                <div className="metric-card">
+                  <div className="card-title">{period === 'week' ? '주간 조퇴' : '월간 조퇴'}</div>
+                  <div className="card-value">{summary.early_leave}</div>
+                </div>
+              </div>
+            ) : null}
+
             <div className="panel soft">
               <div className="panel-header">
                 <div>
                   <div className="panel-title">선택 직원 최근 기록</div>
-                  <p className="panel-subtitle">일자별 근태 상태를 최신순으로 보여줍니다.</p>
+                  <p className="panel-subtitle">날짜와 버튼을 누른 시간이 함께 기록됩니다.</p>
                 </div>
               </div>
               <div className="list" style={{ marginTop: 16 }}>
@@ -151,7 +260,16 @@ export default function AdminAttendancePage() {
                   selectedDays.map((day) => (
                     <div className="list-item" key={day.id}>
                       <div>{day.work_date}</div>
-                      <div className="small muted">{day.attendance_status}</div>
+                      <div className="small muted">상태: {day.attendance_status}</div>
+                      <div className="small muted">출근 시간: {formatDateTime(day.check_in_at)}</div>
+                      <div className="small muted">퇴근 시간: {formatDateTime(day.check_out_at)}</div>
+                      <div className="small muted">
+                        기록 시간:
+                        {selectedEvents
+                          .filter((event) => event.attendance_day_id === day.id)
+                          .map((event) => `${event.event_type}(${formatDateTime(event.occurred_at)})`)
+                          .join(', ') || ' -'}
+                      </div>
                     </div>
                   ))
                 )}
