@@ -30,6 +30,11 @@ type SearchResponse = {
   mode: 'search'
   period: { startDate: string; endDate: string }
   summary: Bucket
+  rows: Array<{
+    userId: string
+    name: string
+    period: Bucket
+  }>
 }
 
 export default function AdminDashboardPage() {
@@ -109,9 +114,10 @@ export default function AdminDashboardPage() {
           <div className="panel-header">
             <div>
               <div className="panel-title">검색</div>
-              <p className="panel-subtitle">검색을 누르면 아래 표는 숨기고, 해당 기간의 업로드 개수/총시간/조회수를 보여줍니다.</p>
+              <p className="panel-subtitle">기간을 지정해서 검색하면 직원별 결과 표가 뜹니다.</p>
             </div>
-            <div className="toolbar">
+            <div className="toolbar" style={{ justifyContent: 'flex-end', width: '100%' }}>
+              <div className="small muted" style={{ marginRight: 4 }}>기간</div>
               <input className="input" type="date" style={{ maxWidth: 160 }} value={searchStart} onChange={(e) => setSearchStart(e.target.value)} />
               <input className="input" type="date" style={{ maxWidth: 160 }} value={searchEnd} onChange={(e) => setSearchEnd(e.target.value)} />
               <button className="button secondary" onClick={search}>검색</button>
@@ -122,23 +128,37 @@ export default function AdminDashboardPage() {
           </div>
 
           {searchResult ? (
-            <div className="grid grid-4" style={{ marginTop: 16 }}>
-              <div className="metric-card">
-                <div className="card-title">기간</div>
-                <div className="card-meta">{searchResult.period.startDate} ~ {searchResult.period.endDate}</div>
+            <div className="data-table" style={{ marginTop: 16 }}>
+              <div className="data-table-header" style={{ gridTemplateColumns: '1.2fr 1fr' }}>
+                <div>이름</div>
+                <div className="data-right">{searchResult.period.startDate} ~ {searchResult.period.endDate}</div>
               </div>
-              <div className="metric-card">
-                <div className="card-title">업로드 개수</div>
-                <div className="card-value">{searchResult.summary.count.toLocaleString('ko-KR')}</div>
-              </div>
-              <div className="metric-card">
-                <div className="card-title">총시간</div>
-                <div className="card-value">{formatDuration(searchResult.summary.durationSeconds)}</div>
-              </div>
-              <div className="metric-card">
-                <div className="card-title">조회수</div>
-                <div className="card-value">{searchResult.summary.views.toLocaleString('ko-KR')}</div>
-              </div>
+              {searchResult.rows.length === 0 ? (
+                <div className="data-table-row" style={{ gridTemplateColumns: '1.2fr 1fr' }}>
+                  <div className="muted">데이터 없음</div>
+                  <div />
+                </div>
+              ) : (
+                searchResult.rows.map((row) => (
+                  <div className="data-table-row" key={row.userId} style={{ gridTemplateColumns: '1.2fr 1fr' }}>
+                    <button className="button secondary" style={{ justifyContent: 'flex-start' }} onClick={() => openUploads({
+                      userId: row.userId,
+                      name: row.name,
+                      today: row.period,
+                      week: row.period,
+                      month: row.period,
+                      year: row.period
+                    })}>
+                      {row.name}
+                    </button>
+                    <div className="cell-metrics">
+                      <div className="data-right">{row.period.count.toLocaleString('ko-KR')}개</div>
+                      <div className="muted">{formatDuration(row.period.durationSeconds)}</div>
+                      <div className="muted">{row.period.views.toLocaleString('ko-KR')}회</div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           ) : null}
         </div>
@@ -207,4 +227,3 @@ export default function AdminDashboardPage() {
     </AuthGuard>
   )
 }
-

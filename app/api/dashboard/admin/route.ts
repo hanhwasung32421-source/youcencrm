@@ -77,13 +77,23 @@ export async function GET(request: Request) {
     const searchStart = url.searchParams.get('searchStart')
     const searchEnd = url.searchParams.get('searchEnd')
 
-    // 3) 검색 모드: 기간 합계만 반환 (표는 프론트에서 숨김)
+    // 3) 검색 모드: 직원별 기간 표 반환
     if (isValidYmd(searchStart) && isValidYmd(searchEnd)) {
       const startIso = kstDayStartUtcIso(searchStart!)
       const endIso = kstDayEndUtcIso(searchEnd!)
-      const { data: rows, error } = await supabaseAdmin
+      const { data: users, error: usersError } = await supabaseAdmin
+        .from('crm_users')
+        .select('id, name, employment_status')
+        .neq('employment_status', 'inactive')
+        .order('name', { ascending: true })
+
+      if (usersError) {
+        return NextResponse.json({ error: usersError.message }, { status: 500 })
+      }
+
+      const { data: videos, error } = await supabaseAdmin
         .from('videos')
-        .select('id, duration_seconds, view_count')
+        .select('primary_owner_user_id, duration_seconds, view_count')
         .gte('created_at', startIso)
         .lte('created_at', endIso)
 
@@ -92,12 +102,26 @@ export async function GET(request: Request) {
       }
 
       const summary: Bucket = { count: 0, durationSeconds: 0, views: 0 }
-      for (const row of rows || []) addBucket(summary, row)
+      const rows = (users || []).map((user) => ({
+        userId: user.id,
+        name: user.name,
+        period: { count: 0, durationSeconds: 0, views: 0 } as Bucket
+      }))
+      const rowMap = new Map(rows.map((row) => [row.userId, row]))
+
+      for (const video of videos || []) {
+        addBucket(summary, video)
+        const ownerId = video.primary_owner_user_id
+        if (!ownerId) continue
+        const target = rowMap.get(ownerId)
+        if (target) addBucket(target.period, video)
+      }
 
       return NextResponse.json({
         mode: 'search',
         period: { startDate: searchStart, endDate: searchEnd },
-        summary
+        summary,
+        rows: rows.sort((a, b) => b.period.count - a.period.count)
       })
     }
 
