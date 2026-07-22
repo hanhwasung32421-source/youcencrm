@@ -101,11 +101,18 @@ textarea {
   color: var(--muted);
 }
 
-.footer-version {
-  text-align: center;
+.top-version {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
   color: var(--muted);
   font-size: 12px;
-  padding: 0 0 22px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .page {

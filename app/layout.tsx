@@ -21,10 +21,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <div className="brand-sub">DB통계 CRM</div>
                 </div>
               </div>
+              <div className="top-version">{BUILD_VERSION}</div>
             </div>
           </header>
           <main className="container page">{children}</main>
-          <footer className="footer-version">ver. {BUILD_VERSION}</footer>
         </div>
       </body>
     </html>
