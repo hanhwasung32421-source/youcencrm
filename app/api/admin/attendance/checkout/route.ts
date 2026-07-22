@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireAdmin } from '@/lib/auth'
+import { getAttendanceWorkedSeconds } from '@/lib/attendance'
 
 const bodySchema = z.object({
   accessToken: z.string().min(10),
@@ -16,42 +17,29 @@ export async function POST(request: Request) {
 
     const { data: existingDay } = await supabaseAdmin
       .from('attendance_days')
-      .select('id, attendance_status')
+      .select('id, attendance_status, check_in_at, check_out_at')
       .eq('user_id', body.userId)
       .eq('work_date', body.workDate)
       .maybeSingle()
 
     let dayId = existingDay?.id
 
-    if (!dayId) {
-      const { data: createdDay, error: createError } = await supabaseAdmin
-        .from('attendance_days')
-        .insert({
-          user_id: body.userId,
-          work_date: body.workDate,
-          attendance_status: 'present',
-          check_out_at: nowIso,
-          updated_at: nowIso
-        })
-        .select('id')
-        .single()
+    if (!dayId || !existingDay?.check_in_at) {
+      return NextResponse.json({ error: '출근 또는 지각 등록 후 퇴근할 수 있습니다.' }, { status: 400 })
+    }
 
-      if (createError || !createdDay) {
-        return NextResponse.json({ error: createError?.message || '퇴근 등록 실패' }, { status: 500 })
-      }
-      dayId = createdDay.id
-    } else {
-      const { error: updateError } = await supabaseAdmin
-        .from('attendance_days')
-        .update({
-          check_out_at: nowIso,
-          updated_at: nowIso
-        })
-        .eq('id', dayId)
+    const workedSeconds = getAttendanceWorkedSeconds(existingDay.check_in_at, nowIso)
+    const { error: updateError } = await supabaseAdmin
+      .from('attendance_days')
+      .update({
+        check_out_at: nowIso,
+        worked_minutes: Math.floor(workedSeconds / 60),
+        updated_at: nowIso
+      })
+      .eq('id', dayId)
 
-      if (updateError) {
-        return NextResponse.json({ error: updateError.message }, { status: 500 })
-      }
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
     const { error: eventError } = await supabaseAdmin.from('attendance_events').insert({
@@ -72,4 +60,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: firstIssue?.message || e?.message || '퇴근 등록 실패' }, { status: 500 })
   }
 }
-
