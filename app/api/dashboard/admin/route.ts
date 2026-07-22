@@ -1,8 +1,70 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 
-function isValidDate(value: string | null) {
+function isValidYmd(value: string | null) {
   return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
+}
+
+function getKstParts(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short'
+  })
+  const parts = Object.fromEntries(formatter.formatToParts(date).map((part) => [part.type, part.value]))
+  const y = Number(parts.year)
+  const m = Number(parts.month)
+  const d = Number(parts.day)
+  const weekday = String(parts.weekday || '')
+  return { y, m, d, ymd: `${parts.year}-${parts.month}-${parts.day}`, weekday }
+}
+
+function kstDayStartUtcIso(ymd: string) {
+  const [y, m, d] = ymd.split('-').map(Number)
+  const utcMillis = Date.UTC(y, m - 1, d, 0, 0, 0) - 9 * 60 * 60 * 1000
+  return new Date(utcMillis).toISOString()
+}
+
+function kstDayEndUtcIso(ymd: string) {
+  const [y, m, d] = ymd.split('-').map(Number)
+  const nextDayUtcMillis = Date.UTC(y, m - 1, d + 1, 0, 0, 0) - 9 * 60 * 60 * 1000
+  return new Date(nextDayUtcMillis - 1).toISOString()
+}
+
+function addDaysKst(ymd: string, deltaDays: number) {
+  const [y, m, d] = ymd.split('-').map(Number)
+  const baseUtcMillis = Date.UTC(y, m - 1, d, 12, 0, 0) - 9 * 60 * 60 * 1000
+  const shifted = new Date(baseUtcMillis + deltaDays * 24 * 60 * 60 * 1000)
+  return getKstParts(shifted).ymd
+}
+
+function getWeekRangeKst(todayYmd: string) {
+  const weekdayShort = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', weekday: 'short' }).format(
+    new Date()
+  )
+  const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
+  const dow = map[weekdayShort] ?? 0
+  const diffToMon = (dow + 6) % 7
+  const start = addDaysKst(todayYmd, -diffToMon)
+  const end = addDaysKst(start, 6)
+  return { start, end }
+}
+
+function getMonthRangeKst(y: number, m: number) {
+  const start = `${y}-${String(m).padStart(2, '0')}-01`
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate()
+  const end = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  return { start, end }
+}
+
+type Bucket = { count: number; durationSeconds: number; views: number }
+
+function addBucket(target: Bucket, row: any) {
+  target.count += 1
+  target.durationSeconds += Number(row.duration_seconds || 0)
+  target.views += Number(row.view_count || 0)
 }
 
 export async function GET(request: Request) {
@@ -12,198 +74,108 @@ export async function GET(request: Request) {
     const { supabaseAdmin } = await requireAdmin(token)
 
     const url = new URL(request.url)
-    const startDate = url.searchParams.get('startDate')
-    const endDate = url.searchParams.get('endDate')
+    const searchStart = url.searchParams.get('searchStart')
+    const searchEnd = url.searchParams.get('searchEnd')
 
-    const today = new Date().toISOString().slice(0, 10)
-    const dayStart = `${today}T00:00:00.000Z`
+    // 3) 검색 모드: 기간 합계만 반환 (표는 프론트에서 숨김)
+    if (isValidYmd(searchStart) && isValidYmd(searchEnd)) {
+      const startIso = kstDayStartUtcIso(searchStart!)
+      const endIso = kstDayEndUtcIso(searchEnd!)
+      const { data: rows, error } = await supabaseAdmin
+        .from('videos')
+        .select('id, duration_seconds, view_count')
+        .gte('created_at', startIso)
+        .lte('created_at', endIso)
 
-    const startDateValue = isValidDate(startDate) ? startDate! : `${new Date().getFullYear()}-01-01`
-    const endDateValue = isValidDate(endDate) ? endDate! : `${new Date().getFullYear()}-12-31`
-    const periodStartIso = `${startDateValue}T00:00:00.000Z`
-    const periodEndIso = `${endDateValue}T23:59:59.999Z`
-
-    const { count: videoCount } = await supabaseAdmin
-      .from('videos')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', dayStart)
-
-    const { count: unknownIpCount } = await supabaseAdmin
-      .from('login_events')
-      .select('*', { count: 'exact', head: true })
-      .eq('network_zone_type', 'unknown')
-      .gte('logged_in_at', dayStart)
-
-    const { data: latest } = await supabaseAdmin
-      .from('videos')
-      .select('id, title, stock_name, content_type, view_count, published_at, created_at, duration_seconds, primary_owner_user_id, youtube_url')
-      .order('created_at', { ascending: false })
-      .limit(10)
-
-    const since = new Date()
-    since.setDate(since.getDate() - 6)
-    const sinceIso = since.toISOString()
-
-    const { data: recentVideos } = await supabaseAdmin
-      .from('videos')
-      .select('id, title, content_type, view_count, duration_seconds, created_at, primary_owner_user_id')
-      .gte('created_at', sinceIso)
-      .order('created_at', { ascending: true })
-
-    const { count: longformCount } = await supabaseAdmin
-      .from('videos')
-      .select('*', { count: 'exact', head: true })
-      .eq('content_type', 'longform')
-
-    const { count: shortformCount } = await supabaseAdmin
-      .from('videos')
-      .select('*', { count: 'exact', head: true })
-      .eq('content_type', 'shortform')
-
-    const { data: allUsers } = await supabaseAdmin
-      .from('crm_users')
-      .select('id, name, employment_status')
-      .neq('employment_status', 'inactive')
-
-    const { data: periodVideos } = await supabaseAdmin
-      .from('videos')
-      .select('id, primary_owner_user_id, created_at, duration_seconds, view_count')
-      .gte('created_at', periodStartIso)
-      .lte('created_at', periodEndIso)
-
-    const dayLabels = Array.from({ length: 7 }).map((_, index) => {
-      const date = new Date()
-      date.setDate(date.getDate() - (6 - index))
-      const key = date.toISOString().slice(0, 10)
-      return {
-        key,
-        label: `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`,
-        value: 0
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
       }
-    })
 
-    for (const row of recentVideos || []) {
-      const key = String(row.created_at || '').slice(0, 10)
-      const target = dayLabels.find((item) => item.key === key)
-      if (target) target.value += 1
-    }
+      const summary: Bucket = { count: 0, durationSeconds: 0, views: 0 }
+      for (const row of rows || []) addBucket(summary, row)
 
-    const userNameMap = Object.fromEntries((allUsers || []).map((user) => [user.id, user.name]))
-    const todayKey = today
-    const efficiencyMap = new Map<
-      string,
-      { userId: string; name: string; todayCount: number; periodCount: number; totalDurationSeconds: number; totalViews: number }
-    >()
-
-    for (const user of allUsers || []) {
-      efficiencyMap.set(user.id, {
-        userId: user.id,
-        name: user.name,
-        todayCount: 0,
-        periodCount: 0,
-        totalDurationSeconds: 0,
-        totalViews: 0
+      return NextResponse.json({
+        mode: 'search',
+        period: { startDate: searchStart, endDate: searchEnd },
+        summary
       })
     }
 
-    // 오늘 등록 수는 전체에서 계산 (기간과 별개)
-    for (const row of recentVideos || []) {
-      const ownerId = row.primary_owner_user_id
-      if (!ownerId) continue
-      if (!efficiencyMap.has(ownerId)) {
-        efficiencyMap.set(ownerId, {
-          userId: ownerId,
-          name: userNameMap[ownerId] || '이름 없음',
-          todayCount: 0,
-          periodCount: 0,
-          totalDurationSeconds: 0,
-          totalViews: 0
-        })
-      }
-      const item = efficiencyMap.get(ownerId)!
-      const createdDate = String(row.created_at || '').slice(0, 10)
-      if (createdDate === todayKey) item.todayCount += 1
+    // 2) 기본 표 모드: 오늘/주/월/년 집계
+    const kstNow = getKstParts(new Date())
+    const today = kstNow.ymd
+    const week = getWeekRangeKst(today)
+    const month = getMonthRangeKst(kstNow.y, kstNow.m)
+    const yearStart = `${kstNow.y}-01-01`
+    const yearEnd = `${kstNow.y}-12-31`
+
+    const yearStartIso = kstDayStartUtcIso(yearStart)
+    const yearEndIso = kstDayEndUtcIso(yearEnd)
+
+    const { data: users, error: usersError } = await supabaseAdmin
+      .from('crm_users')
+      .select('id, name, employment_status')
+      .neq('employment_status', 'inactive')
+      .order('name', { ascending: true })
+
+    if (usersError) {
+      return NextResponse.json({ error: usersError.message }, { status: 500 })
     }
 
-    // 기간 집계 (기간 등록 수/기간 업로드 시간/기간 조회수)
-    for (const video of periodVideos || []) {
-      const ownerId = video.primary_owner_user_id
-      if (!ownerId) continue
-      if (!efficiencyMap.has(ownerId)) {
-        efficiencyMap.set(ownerId, {
-          userId: ownerId,
-          name: userNameMap[ownerId] || '이름 없음',
-          todayCount: 0,
-          periodCount: 0,
-          totalDurationSeconds: 0,
-          totalViews: 0
-        })
-      }
+    const { data: yearVideos, error: videosError } = await supabaseAdmin
+      .from('videos')
+      .select('primary_owner_user_id, created_at, duration_seconds, view_count')
+      .gte('created_at', yearStartIso)
+      .lte('created_at', yearEndIso)
 
-      const item = efficiencyMap.get(ownerId)!
-      item.periodCount += 1
-      item.totalDurationSeconds += video.duration_seconds || 0
-      item.totalViews += video.view_count || 0
+    if (videosError) {
+      return NextResponse.json({ error: videosError.message }, { status: 500 })
     }
 
-    const employeeEfficiency = Array.from(efficiencyMap.values()).sort((a, b) => {
-      if (b.todayCount !== a.todayCount) return b.todayCount - a.todayCount
-      if (b.periodCount !== a.periodCount) return b.periodCount - a.periodCount
-      return b.totalViews - a.totalViews
+    const rangeToIso = (range: { start: string; end: string }) => ({
+      startIso: kstDayStartUtcIso(range.start),
+      endIso: kstDayEndUtcIso(range.end)
+    })
+    const todayIso = rangeToIso({ start: today, end: today })
+    const weekIso = rangeToIso(week)
+    const monthIso = rangeToIso(month)
+
+    const makeRow = (user: any) => ({
+      userId: user.id,
+      name: user.name,
+      today: { count: 0, durationSeconds: 0, views: 0 } as Bucket,
+      week: { count: 0, durationSeconds: 0, views: 0 } as Bucket,
+      month: { count: 0, durationSeconds: 0, views: 0 } as Bucket,
+      year: { count: 0, durationSeconds: 0, views: 0 } as Bucket
     })
 
-    const ownerLabel = (ownerId: string | null) => {
-      if (!ownerId) return '담당 없음'
-      return userNameMap[ownerId] || '이름 없음'
+    const rowMap = new Map<string, ReturnType<typeof makeRow>>()
+    for (const user of users || []) {
+      rowMap.set(user.id, makeRow(user))
     }
 
-    const groupSum = (rows: any[], valueKey: string) => {
-      const map = new Map<string, number>()
-      for (const row of rows) {
-        const label = ownerLabel(row.primary_owner_user_id)
-        const value = Number(row[valueKey] || 0)
-        map.set(label, (map.get(label) || 0) + (Number.isFinite(value) ? value : 0))
+    for (const video of yearVideos || []) {
+      const ownerId = video.primary_owner_user_id
+      if (!ownerId) continue
+      if (!rowMap.has(ownerId)) {
+        rowMap.set(ownerId, makeRow({ id: ownerId, name: '이름 없음' }))
       }
-      return Array.from(map.entries())
-        .map(([label, value]) => ({ label, value }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 10)
-        .reverse()
+      const row = rowMap.get(ownerId)!
+
+      addBucket(row.year, video)
+
+      const createdAt = String(video.created_at || '')
+      if (createdAt >= monthIso.startIso && createdAt <= monthIso.endIso) addBucket(row.month, video)
+      if (createdAt >= weekIso.startIso && createdAt <= weekIso.endIso) addBucket(row.week, video)
+      if (createdAt >= todayIso.startIso && createdAt <= todayIso.endIso) addBucket(row.today, video)
     }
+
+    const rows = Array.from(rowMap.values()).sort((a, b) => b.today.count - a.today.count)
 
     return NextResponse.json({
-      todayRegisteredCount: videoCount || 0,
-      unknownIpCount: unknownIpCount || 0,
-      period: { startDate: startDateValue, endDate: endDateValue },
-      latest: (latest || []).map((item) => ({
-        ...item,
-        owner_name: ownerLabel(item.primary_owner_user_id)
-      })),
-      charts: {
-        viewByLatest: groupSum(latest || [], 'view_count'),
-        durationByLatest: groupSum(latest || [], 'duration_seconds'),
-        dailyRegistrations: dayLabels.map((item) => ({
-          label: item.label,
-          value: item.value
-        })),
-        contentTypes: [
-          { label: '롱폼', value: longformCount || 0 },
-          { label: '숏폼', value: shortformCount || 0 }
-        ],
-        employeeTodayCounts: employeeEfficiency.slice(0, 8).map((item) => ({
-          label: item.name,
-          value: item.todayCount
-        })),
-        employeePeriodCounts: employeeEfficiency.slice(0, 8).map((item) => ({
-          label: item.name,
-          value: item.periodCount
-        })),
-        employeeTotalDurations: employeeEfficiency.slice(0, 8).map((item) => ({
-          label: item.name,
-          value: item.totalDurationSeconds
-        }))
-      },
-      employeeEfficiency
+      mode: 'table',
+      buckets: { today: { start: today, end: today }, week, month, year: { start: yearStart, end: yearEnd } },
+      rows
     })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || '관리자 대시보드 조회 실패' }, { status: 500 })
