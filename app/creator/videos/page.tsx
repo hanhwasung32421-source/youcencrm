@@ -89,6 +89,14 @@ export default function CreatorVideosPage() {
   return (
     <AuthGuard>
       <AppShell title="영상 등록" subtitle="업로드 완료 후 URL과 기본 분류만 입력하면 업로드 시각과 통계가 자동 저장됩니다.">
+        {loading ? (
+          <div className="loading-overlay">
+            <div className="loading-modal">
+              <div className="loading-spinner" />
+              <div className="loading-text">업로드중입니다...</div>
+            </div>
+          </div>
+        ) : null}
         <div className="grid grid-2">
           <div className="panel form-stack">
             <div className="panel-header">

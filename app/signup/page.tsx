@@ -156,6 +156,14 @@ export default function SignupPage() {
 
   return (
     <div className="auth-wrap">
+      {loading ? (
+        <div className="loading-overlay">
+          <div className="loading-modal">
+            <div className="loading-spinner" />
+            <div className="loading-text">처리중입니다...</div>
+          </div>
+        </div>
+      ) : null}
       <div className="auth-shell">
         <div className="panel soft">
           <div className="panel-title">회원가입</div>

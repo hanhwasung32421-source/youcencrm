@@ -112,7 +112,7 @@ export default function AdminAttendancePage() {
           <div className="loading-overlay">
             <div className="loading-modal">
               <div className="loading-spinner" />
-              <div className="loading-text">적용중입니다...</div>
+              <div className="loading-text">근태 적용중입니다...</div>
             </div>
           </div>
         ) : null}
