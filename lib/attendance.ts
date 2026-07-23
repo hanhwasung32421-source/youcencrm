@@ -8,6 +8,13 @@ export function getKstYmd(date = new Date()) {
   return formatter.format(date)
 }
 
+export function addDaysToYmd(ymd: string, days: number) {
+  const [year, month, day] = ymd.split('-').map(Number)
+  const base = new Date(Date.UTC(year, month - 1, day, 12, 0, 0))
+  base.setUTCDate(base.getUTCDate() + days)
+  return getKstYmd(base)
+}
+
 export function getAttendanceWorkedSeconds(checkInAt: string | null, checkOutAt: string | null, now = new Date()) {
   if (!checkInAt) return 0
   const start = new Date(checkInAt)
@@ -47,3 +54,24 @@ export function getAttendancePeriodRange(period: 'day' | 'week' | 'month') {
   }
 }
 
+export function getYmdList(startYmd: string, endYmd: string) {
+  const result: string[] = []
+  let current = startYmd
+  while (current <= endYmd) {
+    result.push(current)
+    current = addDaysToYmd(current, 1)
+  }
+  return result
+}
+
+export function getWeekdayLabel(ymd: string) {
+  const [year, month, day] = ymd.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0))
+  return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', weekday: 'short' }).format(date)
+}
+
+export function getMonthDayNumbers(endYmd: string) {
+  const [year, month] = endYmd.split('-').map(Number)
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  return Array.from({ length: lastDay }, (_, index) => index + 1)
+}

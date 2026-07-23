@@ -827,6 +827,89 @@ textarea {
   justify-self: center;
 }
 
+.attendance-day-table .data-table-header > div:not(:first-child),
+.attendance-day-table .data-table-row > div:not(:first-child),
+.attendance-week-table .data-table-header > div:not(:first-child),
+.attendance-week-table .data-table-row > div:not(:first-child) {
+  border-left: 1px solid var(--line);
+  padding-left: 10px;
+}
+
+.attendance-compact-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.attendance-month-board {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.attendance-month-header,
+.attendance-month-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  border-bottom: 1px solid var(--line);
+}
+
+.attendance-month-row:last-child {
+  border-bottom: none;
+}
+
+.attendance-month-name {
+  padding: 10px 12px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+}
+
+.attendance-month-days {
+  display: grid;
+  grid-template-columns: repeat(31, minmax(28px, 1fr));
+}
+
+.attendance-month-day,
+.attendance-month-cell {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--line);
+  font-size: 11px;
+  text-align: center;
+  padding: 4px 2px;
+}
+
+.attendance-month-day:last-child,
+.attendance-month-cell:last-child {
+  border-right: none;
+}
+
+.attendance-compact-select {
+  min-width: 220px;
+  max-width: 220px;
+  padding: 8px 10px;
+}
+
+.attendance-compact-date {
+  max-width: 160px;
+  padding: 8px 10px;
+}
+
+.attendance-mini-button {
+  min-width: 52px;
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
 @media (max-width: 1100px) {
   .workspace {
     grid-template-columns: 1fr;

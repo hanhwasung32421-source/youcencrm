@@ -21,16 +21,21 @@ type AttendanceRow = {
   checkInAt: string | null
   checkOutAt: string | null
   workedSeconds: number
+  weekEntries: Array<{ ymd: string; label: string; checkInAt: string | null; checkOutAt: string | null }>
+  monthEntries: Array<{ dayNumber: number; status: string }>
 }
 
 export default function AdminAttendancePage() {
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('day')
   const [users, setUsers] = useState<UserItem[]>([])
   const [rows, setRows] = useState<AttendanceRow[]>([])
+  const [weekDays, setWeekDays] = useState<Array<{ ymd: string; label: string }>>([])
+  const [monthDays, setMonthDays] = useState<number[]>([])
   const [selectedUserId, setSelectedUserId] = useState('')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const loadData = async () => {
     const supabase = createSupabaseBrowserClient()
@@ -49,6 +54,8 @@ export default function AdminAttendancePage() {
     }
     setUsers(data.users || [])
     setRows(data.rows || [])
+    setWeekDays(data.weekDays || [])
+    setMonthDays(data.monthDays || [])
     if (!selectedUserId && data.users?.[0]?.id) {
       setSelectedUserId(data.users[0].id)
     }
@@ -61,49 +68,55 @@ export default function AdminAttendancePage() {
   const setAttendance = async (attendanceStatus: 'present' | 'late' | 'vacation' | 'early_leave' | 'checkout') => {
     setMessage('')
     setError('')
+    setSaving(true)
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
+      if (!session?.access_token || !selectedUserId) return
 
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session }
-    } = await supabase.auth.getSession()
-    if (!session?.access_token || !selectedUserId) return
-
-    const res = await fetch('/api/admin/attendance/set', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        accessToken: session.access_token,
-        userId: selectedUserId,
-        workDate: selectedDate,
-        attendanceStatus
+      const res = await fetch('/api/admin/attendance/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: session.access_token,
+          userId: selectedUserId,
+          workDate: selectedDate,
+          attendanceStatus
+        })
       })
-    })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      setError(data?.error || '근태 등록 실패')
-      return
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data?.error || '근태 등록 실패')
+        return
+      }
+      setMessage('근태가 반영되었습니다.')
+      await loadData()
+    } finally {
+      setSaving(false)
     }
-    setMessage('근태가 반영되었습니다.')
-    await loadData()
   }
 
-  const formatDateTime = (value: string | null) => {
+  const formatTime = (value: string | null) => {
     if (!value) return '-'
     const d = new Date(value)
     if (Number.isNaN(d.getTime())) return value
-    return d.toLocaleString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
   }
-
-  const timeLabel =
-    period === 'day'
-      ? '오늘 출근시간 / 퇴근시간 / 총 업무시간'
-      : period === 'week'
-        ? '이번 주 첫 출근 / 마지막 퇴근 / 총 업무시간'
-        : '이번 달 첫 출근 / 마지막 퇴근 / 총 업무시간'
 
   return (
     <AuthGuard requireAdmin>
-      <AppShell title="근태 관리" subtitle="직원별 출근시간, 퇴근시간, 총 업무시간을 한눈에 확인합니다.">
+      <AppShell title="근태 관리" subtitle="일별, 주별, 월별로 직원 근태를 확인하고 바로 수정할 수 있습니다.">
+        {saving ? (
+          <div className="loading-overlay">
+            <div className="loading-modal">
+              <div className="loading-spinner" />
+              <div className="loading-text">적용중입니다...</div>
+            </div>
+          </div>
+        ) : null}
+
         <div className="toolbar">
           <button className={`button ${period === 'day' ? '' : 'secondary'}`} onClick={() => setPeriod('day')}>일별</button>
           <button className={`button ${period === 'week' ? '' : 'secondary'}`} onClick={() => setPeriod('week')}>주별</button>
@@ -114,65 +127,115 @@ export default function AdminAttendancePage() {
           <div className="panel-header">
             <div>
               <div className="panel-title">근태 테이블</div>
-              <p className="panel-subtitle">{timeLabel}</p>
+              <p className="panel-subtitle">
+                {period === 'day' ? '출근, 조퇴, 휴가, 퇴근, 미입력 상태를 함께 표시합니다.' : period === 'week' ? '월~일 출퇴근 시간을 한눈에 볼 수 있게 압축합니다.' : '월 달력 형식으로 출근 상태만 표시합니다.'}
+              </p>
             </div>
           </div>
 
-          <div className="data-table" style={{ marginTop: 16 }}>
-            <div className="data-table-header" style={{ gridTemplateColumns: '1.2fr 0.9fr 0.9fr 1fr' }}>
-              <div>직원</div>
-              <div className="data-right">출근시간</div>
-              <div className="data-right">퇴근시간</div>
-              <div className="data-right">총 업무시간</div>
-            </div>
-            {rows.length === 0 ? (
-              <div className="data-table-row" style={{ gridTemplateColumns: '1.2fr 0.9fr 0.9fr 1fr' }}>
-                <div className="muted">데이터 없음</div>
-                <div />
-                <div />
-                <div />
+          {period === 'day' ? (
+            <div className="data-table attendance-day-table" style={{ marginTop: 16 }}>
+              <div className="data-table-header" style={{ gridTemplateColumns: '1.1fr 0.8fr 0.9fr 0.9fr 1fr' }}>
+                <div>직원</div>
+                <div className="dashboard-header-center">상태</div>
+                <div className="data-right">출근시간</div>
+                <div className="data-right">퇴근시간</div>
+                <div className="data-right">총 업무시간</div>
               </div>
-            ) : (
-              rows.map((row) => (
-                <div className="data-table-row" key={row.userId} style={{ gridTemplateColumns: '1.2fr 0.9fr 0.9fr 1fr' }}>
-                  <div>
-                    <div>{row.name}</div>
-                    <div className="small muted">{row.roleType} · {row.attendanceStatus}</div>
-                  </div>
-                  <div className="data-right">{formatDateTime(row.checkInAt)}</div>
-                  <div className="data-right">{formatDateTime(row.checkOutAt)}</div>
-                  <div className="data-right">{formatWorkedHms(row.workedSeconds)}</div>
+              {rows.length === 0 ? (
+                <div className="data-table-row" style={{ gridTemplateColumns: '1.1fr 0.8fr 0.9fr 0.9fr 1fr' }}>
+                  <div className="muted">데이터 없음</div>
+                  <div />
+                  <div />
+                  <div />
+                  <div />
                 </div>
-              ))
-            )}
-          </div>
+              ) : (
+                rows.map((row) => (
+                  <div className="data-table-row" key={row.userId} style={{ gridTemplateColumns: '1.1fr 0.8fr 0.9fr 0.9fr 1fr' }}>
+                    <div>{row.name}</div>
+                    <div className="dashboard-header-center">{row.attendanceStatus}</div>
+                    <div className="data-right">{formatTime(row.checkInAt)}</div>
+                    <div className="data-right">{formatTime(row.checkOutAt)}</div>
+                    <div className="data-right">{formatWorkedHms(row.workedSeconds)}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : null}
+
+          {period === 'week' ? (
+            <div className="data-table attendance-week-table" style={{ marginTop: 16 }}>
+              <div className="data-table-header" style={{ gridTemplateColumns: `1fr repeat(${weekDays.length}, minmax(92px, 1fr))` }}>
+                <div>직원</div>
+                {weekDays.map((day) => (
+                  <div className="dashboard-header-center" key={day.ymd}>
+                    {day.label}
+                  </div>
+                ))}
+              </div>
+              {rows.map((row) => (
+                <div className="data-table-row" key={row.userId} style={{ gridTemplateColumns: `1fr repeat(${weekDays.length}, minmax(92px, 1fr))` }}>
+                  <div>{row.name}</div>
+                  {row.weekEntries.map((entry) => (
+                    <div className="attendance-compact-cell" key={entry.ymd}>
+                      <div>{formatTime(entry.checkInAt)}</div>
+                      <div className="muted">{formatTime(entry.checkOutAt)}</div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {period === 'month' ? (
+            <div className="attendance-month-board" style={{ marginTop: 16 }}>
+              <div className="attendance-month-header">
+                <div>이름</div>
+                <div className="attendance-month-days">
+                  {monthDays.map((day) => (
+                    <div className="attendance-month-day" key={day}>{day}</div>
+                  ))}
+                </div>
+              </div>
+              {rows.map((row) => (
+                <div className="attendance-month-row" key={row.userId}>
+                  <div className="attendance-month-name">{row.name}</div>
+                  <div className="attendance-month-days">
+                    {row.monthEntries.map((entry) => (
+                      <div className="attendance-month-cell" key={`${row.userId}-${entry.dayNumber}`}>
+                        {entry.status}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="panel stack">
-          <div className="row-between">
+          <div className="row-between wrap">
             <div>
               <div className="panel-title">근태 등록</div>
-              <div className="panel-subtitle">직원을 고르고 출근, 지각, 조퇴, 휴가, 퇴근을 바로 반영합니다.</div>
+              <div className="panel-subtitle">직원과 일자를 한 줄에서 선택하고 바로 반영합니다.</div>
             </div>
-            <div className="toolbar">
-              <select className="select" style={{ minWidth: 220 }} value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
-                <option value="">직원을 선택하세요</option>
+            <div className="toolbar wrap">
+              <select className="select attendance-compact-select" value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
+                <option value="">직원 선택</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name} · {user.role_type}
                   </option>
                 ))}
               </select>
-              <input className="input" style={{ maxWidth: 180 }} type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+              <input className="input attendance-compact-date" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+              <button className="button success attendance-mini-button" onClick={() => setAttendance('present')}>출근</button>
+              <button className="button warning attendance-mini-button" onClick={() => setAttendance('late')}>지각</button>
+              <button className="button danger attendance-mini-button" onClick={() => setAttendance('early_leave')}>조퇴</button>
+              <button className="button violet attendance-mini-button" onClick={() => setAttendance('vacation')}>휴가</button>
+              <button className="button secondary attendance-mini-button" onClick={() => setAttendance('checkout')}>퇴근</button>
             </div>
-          </div>
-
-          <div className="grid grid-2">
-            <button className="button success" onClick={() => setAttendance('present')}>출근</button>
-            <button className="button warning" onClick={() => setAttendance('late')}>지각</button>
-            <button className="button danger" onClick={() => setAttendance('early_leave')}>조퇴</button>
-            <button className="button violet" onClick={() => setAttendance('vacation')}>휴가</button>
-            <button className="button secondary" onClick={() => setAttendance('checkout')}>퇴근</button>
           </div>
 
           {message ? <div className="message-success small">{message}</div> : null}

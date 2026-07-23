@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
-import { getAttendancePeriodRange, getAttendanceWorkedSeconds } from '@/lib/attendance'
+import { getAttendancePeriodRange, getAttendanceWorkedSeconds, getMonthDayNumbers, getWeekdayLabel, getYmdList } from '@/lib/attendance'
 
 export async function GET(request: Request) {
   try {
@@ -33,11 +33,26 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: daysError.message }, { status: 500 })
     }
 
+    const normalizeStatus = (attendanceStatus: string, checkOutAt: string | null) => {
+      if (!attendanceStatus || attendanceStatus === 'not_started') return '미입력'
+      if (attendanceStatus === 'vacation') return '휴가'
+      if (attendanceStatus === 'early_leave') return '조퇴'
+      if (attendanceStatus === 'late') return '출근-지각'
+      if (checkOutAt) return '퇴근'
+      return '출근'
+    }
+
+    const dayMap = new Map((days || []).map((day) => [`${day.user_id}:${day.work_date}`, day]))
+    const weekDays = period === 'week' ? getYmdList(startYmd, endYmd).map((ymd) => ({ ymd, label: getWeekdayLabel(ymd) })) : []
+    const monthDays = period === 'month' ? getMonthDayNumbers(endYmd) : []
+
     return NextResponse.json({
       period,
       startDate: startYmd,
       endDate: endYmd,
       users: users || [],
+      weekDays,
+      monthDays,
       rows: (users || []).map((user) => {
         const userDays = (days || []).filter((day) => day.user_id === user.id)
         const firstCheckIn = userDays
@@ -59,10 +74,34 @@ export async function GET(request: Request) {
           userId: user.id,
           name: user.name,
           roleType: user.role_type,
-          attendanceStatus: latestDay?.attendance_status || 'not_started',
+          attendanceStatus: normalizeStatus(latestDay?.attendance_status || 'not_started', latestDay?.check_out_at || null),
           checkInAt: period === 'day' ? latestDay?.check_in_at || null : firstCheckIn,
           checkOutAt: period === 'day' ? latestDay?.check_out_at || null : lastCheckOut,
-          workedSeconds
+          workedSeconds,
+          weekEntries:
+            period === 'week'
+              ? weekDays.map((day) => {
+                  const item = dayMap.get(`${user.id}:${day.ymd}`)
+                  return {
+                    ymd: day.ymd,
+                    label: day.label,
+                    checkInAt: item?.check_in_at || null,
+                    checkOutAt: item?.check_out_at || null
+                  }
+                })
+              : [],
+          monthEntries:
+            period === 'month'
+              ? monthDays.map((dayNumber) => {
+                  const ymd = `${endYmd.slice(0, 8)}${String(dayNumber).padStart(2, '0')}`
+                  const item = dayMap.get(`${user.id}:${ymd}`)
+                  const status = normalizeStatus(item?.attendance_status || 'not_started', item?.check_out_at || null)
+                  return {
+                    dayNumber,
+                    status: status === '미입력' ? '' : status === '출근-지각' ? '지각' : status
+                  }
+                })
+              : []
         }
       })
     })
