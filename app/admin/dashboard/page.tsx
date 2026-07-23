@@ -101,6 +101,23 @@ export default function AdminDashboardPage() {
     window.open(`/admin/uploads?userId=${row.userId}`, '_blank', 'noopener,noreferrer')
   }
 
+  const renderBucket = (bucket: Bucket) => (
+    <div className="cell-metrics">
+      <div className="cell-metric-row">
+        <span className="cell-metric-label">업로드횟수</span>
+        <span className="data-right">{bucket.count.toLocaleString('ko-KR')}개</span>
+      </div>
+      <div className="cell-metric-row">
+        <span className="cell-metric-label">누적시간</span>
+        <span className="data-right">{formatDuration(bucket.durationSeconds)}</span>
+      </div>
+      <div className="cell-metric-row">
+        <span className="cell-metric-label">조회수</span>
+        <span className="data-right">{bucket.views.toLocaleString('ko-KR')}회</span>
+      </div>
+    </div>
+  )
+
   useEffect(() => {
     void loadTable()
   }, [])
@@ -151,11 +168,7 @@ export default function AdminDashboardPage() {
                     })}>
                       {row.name}
                     </button>
-                    <div className="cell-metrics">
-                      <div className="data-right">{row.period.count.toLocaleString('ko-KR')}개</div>
-                      <div className="muted">{formatDuration(row.period.durationSeconds)}</div>
-                      <div className="muted">{row.period.views.toLocaleString('ko-KR')}회</div>
-                    </div>
+                    {renderBucket(row.period)}
                   </div>
                 ))
               )}
@@ -197,26 +210,10 @@ export default function AdminDashboardPage() {
                     <button className="button secondary" style={{ justifyContent: 'flex-start' }} onClick={() => openUploads(row)}>
                       {row.name}
                     </button>
-                    <div className="cell-metrics">
-                      <div className="data-right">{row.today.count.toLocaleString('ko-KR')}개</div>
-                      <div className="muted">{formatDuration(row.today.durationSeconds)}</div>
-                      <div className="muted">{row.today.views.toLocaleString('ko-KR')}회</div>
-                    </div>
-                    <div className="cell-metrics">
-                      <div className="data-right">{row.week.count.toLocaleString('ko-KR')}개</div>
-                      <div className="muted">{formatDuration(row.week.durationSeconds)}</div>
-                      <div className="muted">{row.week.views.toLocaleString('ko-KR')}회</div>
-                    </div>
-                    <div className="cell-metrics">
-                      <div className="data-right">{row.month.count.toLocaleString('ko-KR')}개</div>
-                      <div className="muted">{formatDuration(row.month.durationSeconds)}</div>
-                      <div className="muted">{row.month.views.toLocaleString('ko-KR')}회</div>
-                    </div>
-                    <div className="cell-metrics">
-                      <div className="data-right">{row.year.count.toLocaleString('ko-KR')}개</div>
-                      <div className="muted">{formatDuration(row.year.durationSeconds)}</div>
-                      <div className="muted">{row.year.views.toLocaleString('ko-KR')}회</div>
-                    </div>
+                    {renderBucket(row.today)}
+                    {renderBucket(row.week)}
+                    {renderBucket(row.month)}
+                    {renderBucket(row.year)}
                   </div>
                 ))
               )}
