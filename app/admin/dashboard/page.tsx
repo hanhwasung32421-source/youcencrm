@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { addDaysToYmd, getAttendancePeriodRange, getKstYmd } from '@/lib/attendance'
 
 type Bucket = { count: number; durationSeconds: number; views: number; afterCheckInCount?: number; afterCheckOutCount?: number }
 type Row = {
@@ -76,7 +77,7 @@ export default function AdminDashboardPage() {
     setTable(data as TableResponse)
   }
 
-  const search = async () => {
+  const search = async (override?: { start: string; end: string }) => {
     setError('')
     const supabase = createSupabaseBrowserClient()
     const {
@@ -84,7 +85,12 @@ export default function AdminDashboardPage() {
     } = await supabase.auth.getSession()
     if (!session?.access_token) return
 
-    const qs = new URLSearchParams({ searchStart, searchEnd }).toString()
+    const start = override?.start || searchStart
+    const end = override?.end || searchEnd
+    if (override?.start) setSearchStart(override.start)
+    if (override?.end) setSearchEnd(override.end)
+
+    const qs = new URLSearchParams({ searchStart: start, searchEnd: end }).toString()
     const res = await fetch(`/api/dashboard/admin?${qs}`, {
       headers: { Authorization: `Bearer ${session.access_token}` }
     })
@@ -133,6 +139,29 @@ export default function AdminDashboardPage() {
   const monthHeader = table ? `이번달(${Number(table.buckets.month.start.split('-')[1])}월)` : '이번달'
   const yearHeader = table ? `올해(${Number(table.buckets.year.start.split('-')[0])})` : '올해'
 
+  const applyPreset = async (type: 'today' | 'week' | 'month') => {
+    const today = getKstYmd(new Date())
+
+    if (type === 'today') {
+      await search({ start: today, end: today })
+      return
+    }
+
+    if (type === 'week') {
+      const week = getAttendancePeriodRange('week')
+      const start = week.startYmd
+      const end = addDaysToYmd(start, 6)
+      await search({ start, end })
+      return
+    }
+
+    const [y, m] = today.split('-').map(Number)
+    const start = `${y}-${String(m).padStart(2, '0')}-01`
+    const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate()
+    const end = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+    await search({ start, end })
+  }
+
   useEffect(() => {
     void loadTable()
   }, [])
@@ -152,28 +181,34 @@ export default function AdminDashboardPage() {
               <div className="small muted" style={{ marginRight: 4 }}>기간</div>
               <input className="input" type="date" style={{ maxWidth: 160 }} value={searchStart} onChange={(e) => setSearchStart(e.target.value)} />
               <input className="input" type="date" style={{ maxWidth: 160 }} value={searchEnd} onChange={(e) => setSearchEnd(e.target.value)} />
-              <button className="button secondary" onClick={search}>검색</button>
+              <button className="button secondary" onClick={() => search()}>검색</button>
               {searchResult ? (
                 <button className="button secondary" onClick={() => setSearchResult(null)}>표 보기</button>
               ) : null}
             </div>
           </div>
 
+          <div className="toolbar" style={{ justifyContent: 'flex-end' }}>
+            <button className="button secondary" onClick={() => applyPreset('today')}>오늘</button>
+            <button className="button secondary" onClick={() => applyPreset('week')}>일주일</button>
+            <button className="button secondary" onClick={() => applyPreset('month')}>이번달</button>
+          </div>
+
           {searchResult ? (
-            <div className="data-table dashboard-summary-table" style={{ marginTop: 16 }}>
-              <div className="data-table-header" style={{ gridTemplateColumns: '1.2fr 1fr' }}>
+            <div className="data-table dashboard-summary-table search-result-table" style={{ marginTop: 16 }}>
+              <div className="data-table-header" style={{ gridTemplateColumns: 'max-content 1fr' }}>
                 <div>이름</div>
                 <div className="dashboard-header-center">{searchResult.period.startDate} ~ {searchResult.period.endDate}</div>
               </div>
               {searchResult.rows.length === 0 ? (
-                <div className="data-table-row" style={{ gridTemplateColumns: '1.2fr 1fr' }}>
+                <div className="data-table-row" style={{ gridTemplateColumns: 'max-content 1fr' }}>
                   <div className="muted">데이터 없음</div>
                   <div />
                 </div>
               ) : (
                 searchResult.rows.map((row) => (
-                  <div className="data-table-row" key={row.userId} style={{ gridTemplateColumns: '1.2fr 1fr' }}>
-                    <button className="button secondary" style={{ justifyContent: 'flex-start' }} onClick={() => openUploads({
+                  <div className="data-table-row" key={row.userId} style={{ gridTemplateColumns: 'max-content 1fr' }}>
+                    <button className="button secondary" style={{ justifyContent: 'flex-start', width: 'fit-content', whiteSpace: 'nowrap' }} onClick={() => openUploads({
                       userId: row.userId,
                       name: row.name,
                       today: row.period,

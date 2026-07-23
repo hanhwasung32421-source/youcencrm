@@ -822,6 +822,12 @@ textarea {
   padding-left: 12px;
 }
 
+.search-result-table {
+  width: fit-content;
+  max-width: min(980px, 100%);
+  margin: 16px auto 0;
+}
+
 .dashboard-header-center {
   text-align: center;
   justify-self: center;
