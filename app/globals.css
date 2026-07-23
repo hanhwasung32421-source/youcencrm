@@ -292,6 +292,8 @@ textarea {
   margin: 0;
   font-size: 17px;
   font-weight: 700;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .panel-subtitle {
@@ -928,26 +930,24 @@ textarea {
   border-radius: 8px;
   font-size: 12px;
   font-weight: 700;
+  background: transparent;
+  border: 1px solid var(--line);
 }
 
 .attendance-status-present {
-  background: #fef3c7;
-  color: #92400e;
+  color: #facc15;
 }
 
 .attendance-status-late {
-  background: #fed7aa;
-  color: #9a3412;
+  color: #fb923c;
 }
 
 .attendance-status-checkout {
-  background: #ffffff;
-  color: #0f172a;
+  color: #ffffff;
 }
 
 .attendance-status-empty {
-  background: #e5e7eb;
-  color: #6b7280;
+  color: #cbd5e1;
 }
 
 .attendance-compact-select {

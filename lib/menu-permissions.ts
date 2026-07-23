@@ -13,11 +13,11 @@ export type BuiltinRoleType = (typeof BUILTIN_ROLE_TYPES)[number]
 
 export const MENU_DEFINITIONS = [
   { key: 'creator_dashboard', label: '대시보드', href: '/creator/dashboard', audience: 'creator' },
-  { key: 'creator_videos', label: '영상 등록', href: '/creator/videos', audience: 'creator' },
-  { key: 'admin_dashboard', label: '대시보드-관리자', href: '/admin/dashboard', audience: 'admin' },
-  { key: 'admin_users', label: '직급 관리 - 관리자', href: '/admin/users', audience: 'admin' },
-  { key: 'admin_attendance', label: '근태 관리 - 관리자', href: '/admin/attendance', audience: 'admin' },
-  { key: 'admin_menu_permissions', label: '메뉴 권한 - 관리자', href: '/admin/menu-permissions', audience: 'admin' }
+  { key: 'creator_videos', label: '영상등록', href: '/creator/videos', audience: 'creator' },
+  { key: 'admin_dashboard', label: '대시보드 - 관리자', href: '/admin/dashboard', audience: 'admin' },
+  { key: 'admin_users', label: '직급관리 - 관리자', href: '/admin/users', audience: 'admin' },
+  { key: 'admin_attendance', label: '근태관리 - 관리자', href: '/admin/attendance', audience: 'admin' },
+  { key: 'admin_menu_permissions', label: '메뉴권한 - 관리자', href: '/admin/menu-permissions', audience: 'admin' }
 ] as const
 
 export type MenuKey = (typeof MENU_DEFINITIONS)[number]['key']
