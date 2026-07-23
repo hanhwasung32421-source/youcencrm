@@ -45,6 +45,14 @@ export async function POST(request: Request) {
         note: '본인 출근 등록'
       })
 
+      await supabaseAdmin.from('audit_logs').insert({
+        actor_user_id: profile.id,
+        action_type: 'check_in',
+        target_type: 'attendance_day',
+        target_id: existingDay.id,
+        diff_summary: { work_date: today, check_in_at: nowIso }
+      })
+
       return NextResponse.json({ ok: true, checkedInAt: nowIso })
     }
 
@@ -72,9 +80,16 @@ export async function POST(request: Request) {
       note: '본인 출근 등록'
     })
 
+    await supabaseAdmin.from('audit_logs').insert({
+      actor_user_id: profile.id,
+      action_type: 'check_in',
+      target_type: 'attendance_day',
+      target_id: createdDay.id,
+      diff_summary: { work_date: today, check_in_at: nowIso }
+    })
+
     return NextResponse.json({ ok: true, checkedInAt: nowIso })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || '출근 등록 실패' }, { status: 500 })
   }
 }
-

@@ -50,6 +50,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: eventError.message }, { status: 500 })
     }
 
+    await supabaseAdmin.from('audit_logs').insert({
+      actor_user_id: profile.id,
+      action_type: 'check_out',
+      target_type: 'attendance_day',
+      target_id: existingDay.id,
+      diff_summary: {
+        work_date: today,
+        check_out_at: nowIso,
+        worked_minutes: Math.floor(workedSeconds / 60)
+      }
+    })
+
     return NextResponse.json({ ok: true, checkedOutAt: nowIso, workedSeconds })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || '퇴근 등록 실패' }, { status: 500 })

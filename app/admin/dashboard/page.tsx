@@ -145,10 +145,10 @@ export default function AdminDashboardPage() {
           </div>
 
           {searchResult ? (
-            <div className="data-table" style={{ marginTop: 16 }}>
+            <div className="data-table dashboard-summary-table" style={{ marginTop: 16 }}>
               <div className="data-table-header" style={{ gridTemplateColumns: '1.2fr 1fr' }}>
                 <div>이름</div>
-                <div className="data-right">{searchResult.period.startDate} ~ {searchResult.period.endDate}</div>
+                <div className="dashboard-header-center">{searchResult.period.startDate} ~ {searchResult.period.endDate}</div>
               </div>
               {searchResult.rows.length === 0 ? (
                 <div className="data-table-row" style={{ gridTemplateColumns: '1.2fr 1fr' }}>
@@ -187,13 +187,13 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className="data-table" style={{ marginTop: 16 }}>
+            <div className="data-table dashboard-summary-table" style={{ marginTop: 16 }}>
               <div className="data-table-header" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr' }}>
                 <div>이름</div>
-                <div className="data-right">오늘</div>
-                <div className="data-right">일주일</div>
-                <div className="data-right">이번달</div>
-                <div className="data-right">올해</div>
+                <div className="dashboard-header-center">오늘</div>
+                <div className="dashboard-header-center">일주일</div>
+                <div className="dashboard-header-center">이번달</div>
+                <div className="dashboard-header-center">올해</div>
               </div>
 
               {!table || table.rows.length === 0 ? (

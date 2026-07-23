@@ -80,6 +80,14 @@ export default function LoginPage() {
 
   return (
     <div className="auth-wrap">
+      {loading ? (
+        <div className="loading-overlay">
+          <div className="loading-modal">
+            <div className="loading-spinner" />
+            <div className="loading-text">로그인 중입니다...</div>
+          </div>
+        </div>
+      ) : null}
       <div className="auth-center">
         <div className="panel form-stack" style={{ width: '100%', maxWidth: 520 }}>
           <h1 className="auth-title">여왕개미미디어 CRM</h1>

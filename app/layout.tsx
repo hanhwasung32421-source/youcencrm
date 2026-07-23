@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { BUILD_VERSION } from '@/lib/generated-version'
+import { TopbarAttendanceControls } from '@/components/topbar-attendance-controls'
 
 export const metadata: Metadata = {
   title: '여왕개미미디어 CRM',
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <div className="brand-sub">DB통계 CRM</div>
                 </div>
               </div>
-              <div className="top-version">{BUILD_VERSION}</div>
+              <TopbarAttendanceControls version={BUILD_VERSION} />
             </div>
           </header>
           <main className="container page">{children}</main>
