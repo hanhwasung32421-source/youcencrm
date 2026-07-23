@@ -21,8 +21,23 @@ type AttendanceRow = {
   checkInAt: string | null
   checkOutAt: string | null
   workedSeconds: number
-  weekEntries: Array<{ ymd: string; label: string; checkInAt: string | null; checkOutAt: string | null }>
+  weekEntries: Array<{ ymd: string; label: string; status: string }>
   monthEntries: Array<{ dayNumber: number; status: string }>
+  monthSummary: {
+    attendanceCount: number
+    lateCount: number
+    earlyLeaveCount: number
+    vacationCount: number
+  }
+}
+
+const STATUS_CLASS_MAP: Record<string, string> = {
+  출근: 'attendance-status-present',
+  지각: 'attendance-status-late',
+  퇴근: 'attendance-status-checkout',
+  미입력: 'attendance-status-empty',
+  휴가: 'attendance-status-empty',
+  조퇴: 'attendance-status-late'
 }
 
 export default function AdminAttendancePage() {
@@ -65,7 +80,7 @@ export default function AdminAttendancePage() {
     void loadData()
   }, [period])
 
-  const setAttendance = async (attendanceStatus: 'present' | 'late' | 'vacation' | 'early_leave' | 'checkout') => {
+  const setAttendance = async (attendanceStatus: 'vacation' | 'early_leave' | 'checkout') => {
     setMessage('')
     setError('')
     setSaving(true)
@@ -105,9 +120,11 @@ export default function AdminAttendancePage() {
     return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
   }
 
+  const badgeClass = (status: string) => STATUS_CLASS_MAP[status] || 'attendance-status-empty'
+
   return (
     <AuthGuard requireAdmin>
-      <AppShell title="근태 관리" subtitle="일별, 주별, 월별로 직원 근태를 확인하고 바로 수정할 수 있습니다.">
+      <AppShell title="근태 관리" subtitle="일별, 주별, 월별로 직원 근태를 빠르게 확인하고 필요한 값만 수정합니다.">
         {saving ? (
           <div className="loading-overlay">
             <div className="loading-modal">
@@ -151,7 +168,7 @@ export default function AdminAttendancePage() {
                 rows.map((row) => (
                   <div className="data-table-row" key={row.userId} style={{ gridTemplateColumns: '1.1fr 0.8fr 0.9fr 0.9fr 1fr' }}>
                     <div>{row.name}</div>
-                    <div className="dashboard-header-center">{row.attendanceStatus}</div>
+                    <div className={`attendance-status-badge ${badgeClass(row.attendanceStatus)}`}>{row.attendanceStatus}</div>
                     <div className="data-right">{formatTime(row.checkInAt)}</div>
                     <div className="data-right">{formatTime(row.checkOutAt)}</div>
                     <div className="data-right">{formatWorkedHms(row.workedSeconds)}</div>
@@ -175,9 +192,8 @@ export default function AdminAttendancePage() {
                 <div className="data-table-row" key={row.userId} style={{ gridTemplateColumns: `1fr repeat(${weekDays.length}, minmax(92px, 1fr))` }}>
                   <div>{row.name}</div>
                   {row.weekEntries.map((entry) => (
-                    <div className="attendance-compact-cell" key={entry.ymd}>
-                      <div>{formatTime(entry.checkInAt)}</div>
-                      <div className="muted">{formatTime(entry.checkOutAt)}</div>
+                    <div className={`attendance-compact-cell attendance-status-badge ${badgeClass(entry.status)}`} key={entry.ymd}>
+                      {entry.status}
                     </div>
                   ))}
                 </div>
@@ -194,16 +210,23 @@ export default function AdminAttendancePage() {
                     <div className="attendance-month-day" key={day}>{day}</div>
                   ))}
                 </div>
+                <div className="attendance-month-summary-header">합계</div>
               </div>
               {rows.map((row) => (
                 <div className="attendance-month-row" key={row.userId}>
                   <div className="attendance-month-name">{row.name}</div>
                   <div className="attendance-month-days">
                     {row.monthEntries.map((entry) => (
-                      <div className="attendance-month-cell" key={`${row.userId}-${entry.dayNumber}`}>
-                        {entry.status}
+                      <div className={`attendance-month-cell ${badgeClass(entry.status)}`} key={`${row.userId}-${entry.dayNumber}`}>
+                        {entry.status === '미입력' ? '' : entry.status}
                       </div>
                     ))}
+                  </div>
+                  <div className="attendance-month-summary">
+                    <div>출근 {row.monthSummary.attendanceCount}</div>
+                    <div>지각 {row.monthSummary.lateCount}</div>
+                    <div>조퇴 {row.monthSummary.earlyLeaveCount}</div>
+                    <div>휴가 {row.monthSummary.vacationCount}</div>
                   </div>
                 </div>
               ))}
@@ -226,8 +249,6 @@ export default function AdminAttendancePage() {
                 ))}
               </select>
               <input className="input attendance-compact-date" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-              <button className="button success attendance-mini-button" onClick={() => setAttendance('present')}>출근</button>
-              <button className="button warning attendance-mini-button" onClick={() => setAttendance('late')}>지각</button>
               <button className="button danger attendance-mini-button" onClick={() => setAttendance('early_leave')}>조퇴</button>
               <button className="button violet attendance-mini-button" onClick={() => setAttendance('vacation')}>휴가</button>
               <button className="button secondary attendance-mini-button" onClick={() => setAttendance('checkout')}>퇴근</button>
@@ -241,3 +262,4 @@ export default function AdminAttendancePage() {
     </AuthGuard>
   )
 }
+

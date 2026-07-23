@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { getKstYmd } from '@/lib/attendance'
 
 type AttendanceStatus = 'not_started' | 'present' | 'late' | 'vacation' | 'early_leave' | 'review_needed'
 
@@ -17,6 +18,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
   const [workedSeconds, setWorkedSeconds] = useState(0)
   const [checkoutAvailableAt, setCheckoutAvailableAt] = useState<number | null>(null)
   const [toastMessage, setToastMessage] = useState('')
+  const [todayYmd, setTodayYmd] = useState(getKstYmd(new Date()))
 
   const loadAttendanceStatus = async () => {
     const supabase = createSupabaseBrowserClient()
@@ -88,6 +90,17 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
     const timer = window.setTimeout(() => setToastMessage(''), 1800)
     return () => window.clearTimeout(timer)
   }, [toastMessage])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const nextYmd = getKstYmd(new Date())
+      if (nextYmd !== todayYmd) {
+        setTodayYmd(nextYmd)
+        void loadAttendanceStatus()
+      }
+    }, 60000)
+    return () => window.clearInterval(timer)
+  }, [todayYmd])
 
   const isCheckoutEnabled = useMemo(() => {
     if (!checkInAt || checkOutAt) return false

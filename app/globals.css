@@ -870,7 +870,7 @@ textarea {
 .attendance-month-header,
 .attendance-month-row {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
+  grid-template-columns: 120px minmax(0, 1fr) 180px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -906,6 +906,48 @@ textarea {
 .attendance-month-day:last-child,
 .attendance-month-cell:last-child {
   border-right: none;
+}
+
+.attendance-month-summary-header,
+.attendance-month-summary {
+  border-left: 1px solid var(--line);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.attendance-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.attendance-status-present {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.attendance-status-late {
+  background: #fed7aa;
+  color: #9a3412;
+}
+
+.attendance-status-checkout {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.attendance-status-empty {
+  background: #e5e7eb;
+  color: #6b7280;
 }
 
 .attendance-compact-select {

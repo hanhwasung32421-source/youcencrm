@@ -222,12 +222,11 @@ export async function GET(request: Request) {
       if (!attendance?.checkInAt) continue
 
       const addAfterCounts = (bucket: Bucket) => {
-        if (createdAt >= attendance.checkInAt!) {
-          bucket.afterCheckInCount = (bucket.afterCheckInCount || 0) + 1
-        }
         if (attendance.checkOutAt && createdAt > attendance.checkOutAt) {
           bucket.afterCheckOutCount = (bucket.afterCheckOutCount || 0) + 1
+          return
         }
+        bucket.afterCheckInCount = (bucket.afterCheckInCount || 0) + 1
       }
 
       if (createdAt >= todayIso.startIso && createdAt <= todayIso.endIso) addAfterCounts(row.today)

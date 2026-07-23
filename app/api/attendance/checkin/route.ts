@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getProfileByAccessToken } from '@/lib/auth'
-import { getKstYmd } from '@/lib/attendance'
+import { getKstYmd, isLateCheckIn } from '@/lib/attendance'
 
 export async function POST(request: Request) {
   try {
@@ -22,10 +22,11 @@ export async function POST(request: Request) {
     }
 
     if (existingDay?.id) {
+      const nextStatus = isLateCheckIn(nowIso, today) ? 'late' : existingDay.attendance_status === 'late' ? 'late' : 'present'
       const { error: updateError } = await supabaseAdmin
         .from('attendance_days')
         .update({
-          attendance_status: existingDay.attendance_status === 'late' ? 'late' : 'present',
+          attendance_status: nextStatus,
           check_in_at: nowIso,
           check_out_at: null,
           worked_minutes: 0,
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
 
       await supabaseAdmin.from('attendance_events').insert({
         attendance_day_id: existingDay.id,
-        event_type: existingDay.attendance_status === 'late' ? 'late' : 'present',
+        event_type: nextStatus,
         occurred_at: nowIso,
         source: 'manual',
         note: '본인 출근 등록'
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: profile.id,
         work_date: today,
-        attendance_status: 'present',
+        attendance_status: isLateCheckIn(nowIso, today) ? 'late' : 'present',
         check_in_at: nowIso,
         updated_at: nowIso
       })
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
 
     await supabaseAdmin.from('attendance_events').insert({
       attendance_day_id: createdDay.id,
-      event_type: 'present',
+      event_type: isLateCheckIn(nowIso, today) ? 'late' : 'present',
       occurred_at: nowIso,
       source: 'manual',
       note: '본인 출근 등록'

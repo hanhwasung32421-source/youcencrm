@@ -18,6 +18,30 @@ export function getAutoCheckoutIso(ymd: string) {
   return getKstIsoAtTime(ymd, 23, 59, 0)
 }
 
+export function getLateThresholdIso(ymd: string) {
+  return getKstIsoAtTime(ymd, 10, 5, 0)
+}
+
+export function isLateCheckIn(checkInAt: string | null, workDate: string) {
+  if (!checkInAt) return false
+  return new Date(checkInAt).getTime() > new Date(getLateThresholdIso(workDate)).getTime()
+}
+
+export function getAttendanceDisplayStatus(day?: {
+  work_date?: string | null
+  attendance_status?: string | null
+  check_in_at?: string | null
+  check_out_at?: string | null
+}) {
+  if (!day?.attendance_status || day.attendance_status === 'not_started') return '미입력'
+  if (day.attendance_status === 'vacation') return '휴가'
+  if (day.attendance_status === 'early_leave') return '조퇴'
+  if (isLateCheckIn(day.check_in_at || null, day.work_date || '')) return '지각'
+  if (day.check_out_at) return '퇴근'
+  if (day.check_in_at) return '출근'
+  return '미입력'
+}
+
 export function addDaysToYmd(ymd: string, days: number) {
   const [year, month, day] = ymd.split('-').map(Number)
   const base = new Date(Date.UTC(year, month - 1, day, 12, 0, 0))
