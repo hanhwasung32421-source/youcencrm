@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import { formatWorkedHms } from '@/lib/attendance'
 
 type AttendanceStatus = 'not_started' | 'present' | 'late' | 'vacation' | 'early_leave' | 'review_needed'
 
 export function TopbarAttendanceControls({ version }: { version: string }) {
+  const pathname = usePathname()
   const [visible, setVisible] = useState(false)
   const [checkingIn, setCheckingIn] = useState(false)
   const [checkingOut, setCheckingOut] = useState(false)
@@ -46,8 +48,19 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
   }
 
   useEffect(() => {
+    const supabase = createSupabaseBrowserClient()
     void loadAttendanceStatus()
-  }, [])
+
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange(() => {
+      void loadAttendanceStatus()
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [pathname])
 
   useEffect(() => {
     if (!checkInAt || checkOutAt) return
