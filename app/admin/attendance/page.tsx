@@ -127,14 +127,11 @@ export default function AdminAttendancePage() {
           <div className="panel-header">
             <div>
               <div className="panel-title">근태 테이블</div>
-              <p className="panel-subtitle">
-                {period === 'day' ? '출근, 조퇴, 휴가, 퇴근, 미입력 상태를 함께 표시합니다.' : period === 'week' ? '월~일 출퇴근 시간을 한눈에 볼 수 있게 압축합니다.' : '월 달력 형식으로 출근 상태만 표시합니다.'}
-              </p>
             </div>
           </div>
 
           {period === 'day' ? (
-            <div className="data-table attendance-day-table" style={{ marginTop: 16 }}>
+            <div className="data-table attendance-day-table attendance-table-center" style={{ marginTop: 16 }}>
               <div className="data-table-header" style={{ gridTemplateColumns: '1.1fr 0.8fr 0.9fr 0.9fr 1fr' }}>
                 <div>직원</div>
                 <div className="dashboard-header-center">상태</div>
@@ -165,7 +162,7 @@ export default function AdminAttendancePage() {
           ) : null}
 
           {period === 'week' ? (
-            <div className="data-table attendance-week-table" style={{ marginTop: 16 }}>
+            <div className="data-table attendance-week-table attendance-table-center" style={{ marginTop: 16 }}>
               <div className="data-table-header" style={{ gridTemplateColumns: `1fr repeat(${weekDays.length}, minmax(92px, 1fr))` }}>
                 <div>직원</div>
                 {weekDays.map((day) => (
@@ -189,7 +186,7 @@ export default function AdminAttendancePage() {
           ) : null}
 
           {period === 'month' ? (
-            <div className="attendance-month-board" style={{ marginTop: 16 }}>
+            <div className="attendance-month-board attendance-table-center" style={{ marginTop: 16 }}>
               <div className="attendance-month-header">
                 <div>이름</div>
                 <div className="attendance-month-days">
@@ -215,12 +212,11 @@ export default function AdminAttendancePage() {
         </div>
 
         <div className="panel stack">
-          <div className="row-between wrap">
+          <div className="row-between">
             <div>
               <div className="panel-title">근태 등록</div>
-              <div className="panel-subtitle">직원과 일자를 한 줄에서 선택하고 바로 반영합니다.</div>
             </div>
-            <div className="toolbar wrap">
+            <div className="toolbar attendance-register-row">
               <select className="select attendance-compact-select" value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>
                 <option value="">직원 선택</option>
                 {users.map((user) => (
@@ -245,4 +241,3 @@ export default function AdminAttendancePage() {
     </AuthGuard>
   )
 }
-

@@ -136,6 +136,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
       setCheckOutAt(data.checkedOutAt || new Date().toISOString())
       setWorkedSeconds(Number(data.workedSeconds || workedSeconds))
       setCheckoutAvailableAt(null)
+      setToastMessage('퇴근처리 되었습니다.')
     } finally {
       setCheckingOut(false)
     }
@@ -147,6 +148,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
 
   const showCheckInButton = !checkInAt
   const showCheckoutButton = Boolean(checkInAt && !checkOutAt)
+  const showWorktime = !checkOutAt
 
   return (
     <>
@@ -162,12 +164,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
             퇴근
           </button>
         ) : null}
-        {checkInAt && checkOutAt ? (
-          <button className="button secondary topbar-action-button" disabled>
-            퇴근
-          </button>
-        ) : null}
-        <div className="topbar-worktime">{formatWorkedHms(workedSeconds)}</div>
+        {showWorktime ? <div className="topbar-worktime">{formatWorkedHms(workedSeconds)}</div> : null}
         <div className="top-version">{version}</div>
       </div>
     </>

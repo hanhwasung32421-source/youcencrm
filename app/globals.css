@@ -835,6 +835,17 @@ textarea {
   padding-left: 10px;
 }
 
+.attendance-table-center .data-table-header > div,
+.attendance-table-center .data-table-row > div,
+.attendance-table-center .data-table-row > button,
+.attendance-table-center .attendance-month-header > div,
+.attendance-table-center .attendance-month-row > div,
+.attendance-table-center .attendance-month-day,
+.attendance-table-center .attendance-month-cell {
+  text-align: center;
+  justify-content: center;
+}
+
 .attendance-compact-cell {
   display: flex;
   flex-direction: column;
@@ -900,6 +911,13 @@ textarea {
 .attendance-compact-date {
   max-width: 160px;
   padding: 8px 10px;
+}
+
+.attendance-register-row {
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: 100%;
+  justify-content: flex-end;
 }
 
 .attendance-mini-button {
