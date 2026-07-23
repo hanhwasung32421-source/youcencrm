@@ -15,6 +15,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
   const [checkOutAt, setCheckOutAt] = useState<string | null>(null)
   const [workedSeconds, setWorkedSeconds] = useState(0)
   const [checkoutAvailableAt, setCheckoutAvailableAt] = useState<number | null>(null)
+  const [toastMessage, setToastMessage] = useState('')
 
   const loadAttendanceStatus = async () => {
     const supabase = createSupabaseBrowserClient()
@@ -70,6 +71,12 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
     return () => window.clearInterval(timer)
   }, [checkoutAvailableAt])
 
+  useEffect(() => {
+    if (!toastMessage) return
+    const timer = window.setTimeout(() => setToastMessage(''), 1800)
+    return () => window.clearTimeout(timer)
+  }, [toastMessage])
+
   const isCheckoutEnabled = useMemo(() => {
     if (!checkInAt || checkOutAt) return false
     if (!checkoutAvailableAt) return true
@@ -101,6 +108,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
       setCheckOutAt(null)
       setWorkedSeconds(0)
       setCheckoutAvailableAt(new Date(checkedInAt).getTime() + 5000)
+      setToastMessage('출근처리 되었습니다.')
     } finally {
       setCheckingIn(false)
     }
@@ -138,34 +146,30 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
   }
 
   const showCheckInButton = !checkInAt
-  const showDisabledCheckIn = Boolean(checkInAt && !checkOutAt && !isCheckoutEnabled)
-  const showCheckoutButton = Boolean(checkInAt && !checkOutAt && isCheckoutEnabled)
+  const showCheckoutButton = Boolean(checkInAt && !checkOutAt)
 
   return (
-    <div className="topbar-actions">
-      {showCheckInButton ? (
-        <button className="button success topbar-action-button" disabled={checkingIn} onClick={checkIn}>
-          출근
-        </button>
-      ) : null}
-      {showDisabledCheckIn ? (
-        <button className="button success topbar-action-button" disabled>
-          출근
-        </button>
-      ) : null}
-      {showCheckoutButton ? (
-        <button className="button secondary topbar-action-button" disabled={checkingOut} onClick={checkOut}>
-          퇴근
-        </button>
-      ) : null}
-      {checkInAt && checkOutAt ? (
-        <button className="button secondary topbar-action-button" disabled>
-          퇴근
-        </button>
-      ) : null}
-      <div className="topbar-worktime">{formatWorkedHms(workedSeconds)}</div>
-      <div className="top-version">{version}</div>
-    </div>
+    <>
+      {toastMessage ? <div className="topbar-toast">{toastMessage}</div> : null}
+      <div className="topbar-actions">
+        {showCheckInButton ? (
+          <button className="button success topbar-action-button" disabled={checkingIn} onClick={checkIn}>
+            출근
+          </button>
+        ) : null}
+        {showCheckoutButton ? (
+          <button className="button secondary topbar-action-button" disabled={checkingOut || !isCheckoutEnabled} onClick={checkOut}>
+            퇴근
+          </button>
+        ) : null}
+        {checkInAt && checkOutAt ? (
+          <button className="button secondary topbar-action-button" disabled>
+            퇴근
+          </button>
+        ) : null}
+        <div className="topbar-worktime">{formatWorkedHms(workedSeconds)}</div>
+        <div className="top-version">{version}</div>
+      </div>
+    </>
   )
 }
-
