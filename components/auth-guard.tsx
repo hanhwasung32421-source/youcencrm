@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
-import { getFirstAllowedHref, getMenuKeyByPath } from '@/lib/menu-permissions'
+import { getFirstAllowedHref, getMenuDefinition, getMenuKeyByPath } from '@/lib/menu-permissions'
 
 export function AuthGuard({
   children,
@@ -66,7 +66,17 @@ export function AuthGuard({
   }
 
   if (!ready) {
-    return <div className="muted">접속 권한을 확인하는 중입니다...</div>
+    const currentMenuKey = getMenuKeyByPath(pathname)
+    const label = (currentMenuKey ? getMenuDefinition(currentMenuKey)?.label : null) || '메뉴'
+    const message = `${label} 메뉴 진입 중`
+    return (
+      <div className="loading-overlay">
+        <div className="loading-modal">
+          <div className="loading-spinner" />
+          <div className="loading-text">{message}</div>
+        </div>
+      </div>
+    )
   }
 
   return <>{children}</>
