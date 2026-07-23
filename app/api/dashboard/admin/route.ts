@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
+import { getAutoCheckoutIso } from '@/lib/attendance'
 
 function isValidYmd(value: string | null) {
   return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
@@ -59,7 +60,7 @@ function getMonthRangeKst(y: number, m: number) {
   return { start, end }
 }
 
-type Bucket = { count: number; durationSeconds: number; views: number }
+type Bucket = { count: number; durationSeconds: number; views: number; afterCheckInCount?: number; afterCheckOutCount?: number }
 
 function addBucket(target: Bucket, row: any) {
   target.count += 1
@@ -167,7 +168,7 @@ export async function GET(request: Request) {
     const makeRow = (user: any) => ({
       userId: user.id,
       name: user.name,
-      today: { count: 0, durationSeconds: 0, views: 0 } as Bucket,
+      today: { count: 0, durationSeconds: 0, views: 0, afterCheckInCount: 0, afterCheckOutCount: 0 } as Bucket,
       week: { count: 0, durationSeconds: 0, views: 0 } as Bucket,
       month: { count: 0, durationSeconds: 0, views: 0 } as Bucket,
       year: { count: 0, durationSeconds: 0, views: 0 } as Bucket
@@ -192,6 +193,38 @@ export async function GET(request: Request) {
       if (createdAt >= monthIso.startIso && createdAt <= monthIso.endIso) addBucket(row.month, video)
       if (createdAt >= weekIso.startIso && createdAt <= weekIso.endIso) addBucket(row.week, video)
       if (createdAt >= todayIso.startIso && createdAt <= todayIso.endIso) addBucket(row.today, video)
+    }
+
+    const { data: todayAttendanceDays } = await supabaseAdmin
+      .from('attendance_days')
+      .select('user_id, check_in_at, check_out_at')
+      .eq('work_date', today)
+
+    const attendanceMap = new Map(
+      (todayAttendanceDays || []).map((item) => [
+        item.user_id,
+        {
+          checkInAt: item.check_in_at || null,
+          checkOutAt: item.check_out_at || getAutoCheckoutIso(today)
+        }
+      ])
+    )
+
+    for (const video of yearVideos || []) {
+      const ownerId = video.primary_owner_user_id
+      if (!ownerId) continue
+      const row = rowMap.get(ownerId)
+      if (!row) continue
+      const createdAt = String(video.created_at || '')
+      if (!(createdAt >= todayIso.startIso && createdAt <= todayIso.endIso)) continue
+      const attendance = attendanceMap.get(ownerId)
+      if (!attendance?.checkInAt) continue
+      if (createdAt >= attendance.checkInAt) {
+        row.today.afterCheckInCount = (row.today.afterCheckInCount || 0) + 1
+      }
+      if (attendance.checkOutAt && createdAt > attendance.checkOutAt) {
+        row.today.afterCheckOutCount = (row.today.afterCheckOutCount || 0) + 1
+      }
     }
 
     const rows = Array.from(rowMap.values()).sort((a, b) => b.today.count - a.today.count)

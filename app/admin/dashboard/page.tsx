@@ -5,7 +5,7 @@ import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 
-type Bucket = { count: number; durationSeconds: number; views: number }
+type Bucket = { count: number; durationSeconds: number; views: number; afterCheckInCount?: number; afterCheckOutCount?: number }
 type Row = {
   userId: string
   name: string
@@ -115,8 +115,23 @@ export default function AdminDashboardPage() {
         <span className="cell-metric-label">조회수</span>
         <span className="data-right">{bucket.views.toLocaleString('ko-KR')}회</span>
       </div>
+      {typeof bucket.afterCheckInCount === 'number' ? (
+        <div className="cell-metric-subline">
+          (출근후 {bucket.afterCheckInCount.toLocaleString('ko-KR')}회 퇴근후 {(bucket.afterCheckOutCount || 0).toLocaleString('ko-KR')}회)
+        </div>
+      ) : null}
     </div>
   )
+
+  const formatShortDate = (ymd: string) => {
+    const [, month, day] = ymd.split('-').map(Number)
+    return `${month}/${day}`
+  }
+
+  const todayHeader = table ? `오늘(${formatShortDate(table.buckets.today.start)})` : '오늘'
+  const weekHeader = table ? `일주일(${formatShortDate(table.buckets.week.start)}~${formatShortDate(table.buckets.week.end)})` : '일주일'
+  const monthHeader = table ? `이번달(${Number(table.buckets.month.start.split('-')[1])}월)` : '이번달'
+  const yearHeader = table ? `올해(${Number(table.buckets.year.start.split('-')[0])})` : '올해'
 
   useEffect(() => {
     void loadTable()
@@ -190,10 +205,10 @@ export default function AdminDashboardPage() {
             <div className="data-table dashboard-summary-table" style={{ marginTop: 16 }}>
               <div className="data-table-header" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr' }}>
                 <div>이름</div>
-                <div className="dashboard-header-center">오늘</div>
-                <div className="dashboard-header-center">일주일</div>
-                <div className="dashboard-header-center">이번달</div>
-                <div className="dashboard-header-center">올해</div>
+                <div className="dashboard-header-center">{todayHeader}</div>
+                <div className="dashboard-header-center">{weekHeader}</div>
+                <div className="dashboard-header-center">{monthHeader}</div>
+                <div className="dashboard-header-center">{yearHeader}</div>
               </div>
 
               {!table || table.rows.length === 0 ? (

@@ -8,6 +8,16 @@ export function getKstYmd(date = new Date()) {
   return formatter.format(date)
 }
 
+export function getKstIsoAtTime(ymd: string, hour: number, minute: number, second = 0) {
+  const [year, month, day] = ymd.split('-').map(Number)
+  const utcMillis = Date.UTC(year, month - 1, day, hour, minute, second) - 9 * 60 * 60 * 1000
+  return new Date(utcMillis).toISOString()
+}
+
+export function getAutoCheckoutIso(ymd: string) {
+  return getKstIsoAtTime(ymd, 23, 59, 0)
+}
+
 export function addDaysToYmd(ymd: string, days: number) {
   const [year, month, day] = ymd.split('-').map(Number)
   const base = new Date(Date.UTC(year, month - 1, day, 12, 0, 0))
