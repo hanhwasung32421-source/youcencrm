@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
-import { formatWorkedHms } from '@/lib/attendance'
 
 type AttendanceStatus = 'not_started' | 'present' | 'late' | 'vacation' | 'early_leave' | 'review_needed'
 
@@ -161,8 +160,6 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
 
   const showCheckInButton = !checkInAt
   const showCheckoutButton = Boolean(checkInAt && !checkOutAt)
-  const showWorktime = !checkOutAt
-
   return (
     <>
       {toastMessage ? <div className="topbar-toast">{toastMessage}</div> : null}
@@ -177,7 +174,6 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
             퇴근
           </button>
         ) : null}
-        {showWorktime ? <div className="topbar-worktime">{formatWorkedHms(workedSeconds)}</div> : null}
         <div className="top-version">{version}</div>
       </div>
     </>
