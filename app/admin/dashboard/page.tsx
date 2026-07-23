@@ -113,6 +113,14 @@ export default function AdminDashboardPage() {
         <span className="cell-metric-label">업로드횟수</span>
         <span className="data-right">{bucket.count.toLocaleString('ko-KR')}개</span>
       </div>
+      {typeof bucket.afterCheckInCount === 'number' ? (
+        <div className="cell-metric-row">
+          <span className="cell-metric-label">출근후/퇴근후</span>
+          <span className="data-right">
+            {bucket.afterCheckInCount.toLocaleString('ko-KR')}회 / {(bucket.afterCheckOutCount || 0).toLocaleString('ko-KR')}회
+          </span>
+        </div>
+      ) : null}
       <div className="cell-metric-row">
         <span className="cell-metric-label">누적시간</span>
         <span className="data-right">{formatDuration(bucket.durationSeconds)}</span>
@@ -121,11 +129,6 @@ export default function AdminDashboardPage() {
         <span className="cell-metric-label">조회수</span>
         <span className="data-right">{bucket.views.toLocaleString('ko-KR')}회</span>
       </div>
-      {typeof bucket.afterCheckInCount === 'number' ? (
-        <div className="cell-metric-subline">
-          (출근후 {bucket.afterCheckInCount.toLocaleString('ko-KR')}회 퇴근후 {(bucket.afterCheckOutCount || 0).toLocaleString('ko-KR')}회)
-        </div>
-      ) : null}
     </div>
   )
 

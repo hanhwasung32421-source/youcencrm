@@ -169,9 +169,9 @@ export async function GET(request: Request) {
       userId: user.id,
       name: user.name,
       today: { count: 0, durationSeconds: 0, views: 0, afterCheckInCount: 0, afterCheckOutCount: 0 } as Bucket,
-      week: { count: 0, durationSeconds: 0, views: 0 } as Bucket,
-      month: { count: 0, durationSeconds: 0, views: 0 } as Bucket,
-      year: { count: 0, durationSeconds: 0, views: 0 } as Bucket
+      week: { count: 0, durationSeconds: 0, views: 0, afterCheckInCount: 0, afterCheckOutCount: 0 } as Bucket,
+      month: { count: 0, durationSeconds: 0, views: 0, afterCheckInCount: 0, afterCheckOutCount: 0 } as Bucket,
+      year: { count: 0, durationSeconds: 0, views: 0, afterCheckInCount: 0, afterCheckOutCount: 0 } as Bucket
     })
 
     const rowMap = new Map<string, ReturnType<typeof makeRow>>()
@@ -195,17 +195,18 @@ export async function GET(request: Request) {
       if (createdAt >= todayIso.startIso && createdAt <= todayIso.endIso) addBucket(row.today, video)
     }
 
-    const { data: todayAttendanceDays } = await supabaseAdmin
+    const { data: attendanceDays } = await supabaseAdmin
       .from('attendance_days')
-      .select('user_id, check_in_at, check_out_at')
-      .eq('work_date', today)
+      .select('user_id, work_date, check_in_at, check_out_at')
+      .gte('work_date', yearStart)
+      .lte('work_date', yearEnd)
 
     const attendanceMap = new Map(
-      (todayAttendanceDays || []).map((item) => [
-        item.user_id,
+      (attendanceDays || []).map((item) => [
+        `${item.user_id}:${item.work_date}`,
         {
           checkInAt: item.check_in_at || null,
-          checkOutAt: item.check_out_at || getAutoCheckoutIso(today)
+          checkOutAt: item.check_out_at || getAutoCheckoutIso(item.work_date)
         }
       ])
     )
@@ -216,15 +217,23 @@ export async function GET(request: Request) {
       const row = rowMap.get(ownerId)
       if (!row) continue
       const createdAt = String(video.created_at || '')
-      if (!(createdAt >= todayIso.startIso && createdAt <= todayIso.endIso)) continue
-      const attendance = attendanceMap.get(ownerId)
+      const createdYmd = createdAt.slice(0, 10)
+      const attendance = attendanceMap.get(`${ownerId}:${createdYmd}`)
       if (!attendance?.checkInAt) continue
-      if (createdAt >= attendance.checkInAt) {
-        row.today.afterCheckInCount = (row.today.afterCheckInCount || 0) + 1
+
+      const addAfterCounts = (bucket: Bucket) => {
+        if (createdAt >= attendance.checkInAt!) {
+          bucket.afterCheckInCount = (bucket.afterCheckInCount || 0) + 1
+        }
+        if (attendance.checkOutAt && createdAt > attendance.checkOutAt) {
+          bucket.afterCheckOutCount = (bucket.afterCheckOutCount || 0) + 1
+        }
       }
-      if (attendance.checkOutAt && createdAt > attendance.checkOutAt) {
-        row.today.afterCheckOutCount = (row.today.afterCheckOutCount || 0) + 1
-      }
+
+      if (createdAt >= todayIso.startIso && createdAt <= todayIso.endIso) addAfterCounts(row.today)
+      if (createdAt >= weekIso.startIso && createdAt <= weekIso.endIso) addAfterCounts(row.week)
+      if (createdAt >= monthIso.startIso && createdAt <= monthIso.endIso) addAfterCounts(row.month)
+      if (createdAt >= yearStartIso && createdAt <= yearEndIso) addAfterCounts(row.year)
     }
 
     const rows = Array.from(rowMap.values()).sort((a, b) => b.today.count - a.today.count)
