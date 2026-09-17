@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     if (existingDay?.id) {
       const nextStatus = isLateCheckIn(nowIso, today) ? 'late' : existingDay.attendance_status === 'late' ? 'late' : 'present'
-      const { error: updateError } = await supabaseAdmin
+      const { data: updatedRows, error: updateError } = await supabaseAdmin
         .from(TABLES.attendanceDays)
         .update({
           attendance_status: nextStatus,
@@ -34,9 +34,21 @@ export async function POST(request: Request) {
           updated_at: nowIso
         })
         .eq('id', existingDay.id)
+        .is('check_in_at', null)
+        .select('id')
 
       if (updateError) {
         return NextResponse.json({ error: updateError.message }, { status: 500 })
+      }
+
+      // 동시 요청이 먼저 체크인을 반영했다면(위 필터에 안 걸려 0행 갱신) 그 결과를 그대로 인정한다.
+      if (!updatedRows?.length) {
+        const { data: raceWinner } = await supabaseAdmin
+          .from(TABLES.attendanceDays)
+          .select('check_in_at')
+          .eq('id', existingDay.id)
+          .maybeSingle()
+        return NextResponse.json({ ok: true, checkedInAt: raceWinner?.check_in_at || nowIso })
       }
 
       await supabaseAdmin.from(TABLES.attendanceEvents).insert({
@@ -70,8 +82,24 @@ export async function POST(request: Request) {
       .select('id')
       .single()
 
-    if (createError || !createdDay) {
-      return NextResponse.json({ error: createError?.message || '출근 등록 실패' }, { status: 500 })
+    if (createError) {
+      // unique(user_id, work_date) 위반 = 동시에 들어온 다른 출근 요청이 먼저 이겼다는 뜻.
+      // 에러로 처리하지 않고, 먼저 기록된 출근 시간을 그대로 돌려준다(멱등 처리).
+      if (createError.code === '23505') {
+        const { data: raceWinner } = await supabaseAdmin
+          .from(TABLES.attendanceDays)
+          .select('check_in_at')
+          .eq('user_id', profile.id)
+          .eq('work_date', today)
+          .maybeSingle()
+        if (raceWinner?.check_in_at) {
+          return NextResponse.json({ ok: true, checkedInAt: raceWinner.check_in_at })
+        }
+      }
+      return NextResponse.json({ error: createError.message }, { status: 500 })
+    }
+    if (!createdDay) {
+      return NextResponse.json({ error: '출근 등록 실패' }, { status: 500 })
     }
 
     await supabaseAdmin.from(TABLES.attendanceEvents).insert({

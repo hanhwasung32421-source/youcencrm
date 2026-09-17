@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     }
 
     const workedSeconds = getAttendanceWorkedSeconds(existingDay.check_in_at, nowIso)
-    const { error: updateError } = await supabaseAdmin
+    const { data: updatedRows, error: updateError } = await supabaseAdmin
       .from(TABLES.attendanceDays)
       .update({
         check_out_at: nowIso,
@@ -34,9 +34,21 @@ export async function POST(request: Request) {
         updated_at: nowIso
       })
       .eq('id', existingDay.id)
+      .is('check_out_at', null)
+      .select('id')
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+
+    // 동시 요청이 먼저 퇴근을 반영했다면(0행 갱신) 중복 기록하지 않고 그 결과를 그대로 인정한다.
+    if (!updatedRows?.length) {
+      const { data: raceWinner } = await supabaseAdmin
+        .from(TABLES.attendanceDays)
+        .select('check_out_at')
+        .eq('id', existingDay.id)
+        .maybeSingle()
+      return NextResponse.json({ ok: true, checkedOutAt: raceWinner?.check_out_at || nowIso, workedSeconds })
     }
 
     const { error: eventError } = await supabaseAdmin.from(TABLES.attendanceEvents).insert({
