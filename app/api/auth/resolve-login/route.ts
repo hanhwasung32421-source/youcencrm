@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin-client'
 import { TABLES } from '@/lib/supabase/tables'
+import { escapeLikePattern } from '@/lib/supabase/query-utils'
 
 const bodySchema = z.object({
   loginId: z.string().min(1)
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabaseAdmin
       .from(TABLES.crmUsers)
       .select('email')
-      .eq('login_id', body.loginId)
+      .ilike('login_id', escapeLikePattern(body.loginId.trim()))
       .maybeSingle()
 
     if (error || !data?.email) {

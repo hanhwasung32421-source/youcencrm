@@ -5,6 +5,7 @@ import { sha256 } from '@/lib/crypto'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin-client'
 import { SIGNUP_CHALLENGE_SECRET } from '@/lib/app-config'
 import { TABLES } from '@/lib/supabase/tables'
+import { escapeLikePattern } from '@/lib/supabase/query-utils'
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     const { data: existingLoginId } = await supabaseAdmin
       .from(TABLES.crmUsers)
       .select('id, auth_user_id')
-      .eq('login_id', body.loginId)
+      .ilike('login_id', escapeLikePattern(body.loginId.trim()))
       .maybeSingle()
 
     if (existingLoginId) {
