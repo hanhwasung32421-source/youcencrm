@@ -167,8 +167,14 @@ export default function AdminAttendancePage() {
                 </div>
               ) : (
                 rows.map((row) => (
-                  <div className="data-table-row" key={row.userId} style={{ gridTemplateColumns: '1.1fr 0.8fr 0.9fr 0.9fr 1fr' }}>
-                    <div>{row.name}</div>
+                  <div
+                    className="data-table-row"
+                    key={row.userId}
+                    style={{ gridTemplateColumns: '1.1fr 0.8fr 0.9fr 0.9fr 1fr', cursor: 'pointer' }}
+                    title="클릭하면 아래 근태 등록에서 이 직원이 선택됩니다."
+                    onClick={() => setSelectedUserId(row.userId)}
+                  >
+                    <div>{row.name}{selectedUserId === row.userId ? ' ✓' : ''}</div>
                     <div className={`attendance-status-badge ${badgeClass(row.attendanceStatus)}`}>{row.attendanceStatus}</div>
                     <div className="data-right">{formatTime(row.checkInAt)}</div>
                     <div className="data-right">{formatTime(row.checkOutAt)}</div>

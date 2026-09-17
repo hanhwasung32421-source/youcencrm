@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
@@ -30,7 +31,23 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
   const [addingRole, setAddingRole] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const { toast, showSuccess, showError } = useToast()
+
+  const filteredItems = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return items
+    return items.filter(
+      (user) => user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query)
+    )
+  }, [items, searchQuery])
+
+  const updateUserRoleCode = (userId: string, roleCode: string) => {
+    const role = roles.find((item) => item.code === roleCode)
+    setItems((prev) =>
+      prev.map((user) => (user.id === userId ? { ...user, role_code: roleCode, role_name: role?.name || roleCode } : user))
+    )
+  }
 
   const loadUsers = async () => {
     try {
@@ -119,47 +136,55 @@ export default function AdminUsersPage() {
               <div className="panel-title">직급 편집 목록</div>
               <p className="panel-subtitle">직원별 직급을 문서 행처럼 확인하고 바로 수정할 수 있습니다.</p>
             </div>
+            <Link className="button secondary nowrap" href="/admin/menu-permissions">
+              메뉴 권한 관리로 이동
+            </Link>
           </div>
+
+          <div className="field" style={{ marginBottom: 16 }}>
+            <input
+              className="input"
+              placeholder="이름 또는 이메일로 검색"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
           <div className="list">
-            {items.map((user, index) => (
-              <div className="list-item" key={user.id}>
-                <div className="row-between" style={{ alignItems: 'flex-start' }}>
-                  <div>
-                    <div>{user.name}</div>
-                    <div className="small muted">{user.email}</div>
-                  </div>
-                  <div className="row">
-                    <select
-                      className="select"
-                      value={user.role_code}
-                      onChange={(e) => {
-                        const next = [...items]
-                        const role = roles.find((item) => item.code === e.target.value)
-                        next[index] = {
-                          ...user,
-                          role_code: e.target.value,
-                          role_name: role?.name || e.target.value
-                        }
-                        setItems(next)
-                      }}
-                    >
-                      {roles.map((role) => (
-                        <option key={role.code} value={role.code}>
-                          {role.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      className="button"
-                      disabled={savingUserId === user.id}
-                      onClick={() => saveRole(user.id, user.role_code)}
-                    >
-                      {savingUserId === user.id ? '저장 중...' : '직급 저장'}
-                    </button>
+            {filteredItems.length === 0 ? (
+              <div className="empty-state">검색 결과가 없습니다.</div>
+            ) : (
+              filteredItems.map((user) => (
+                <div className="list-item" key={user.id}>
+                  <div className="row-between" style={{ alignItems: 'flex-start' }}>
+                    <div>
+                      <div>{user.name}</div>
+                      <div className="small muted">{user.email}</div>
+                    </div>
+                    <div className="row">
+                      <select
+                        className="select"
+                        value={user.role_code}
+                        onChange={(e) => updateUserRoleCode(user.id, e.target.value)}
+                      >
+                        {roles.map((role) => (
+                          <option key={role.code} value={role.code}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        className="button"
+                        disabled={savingUserId === user.id}
+                        onClick={() => saveRole(user.id, user.role_code)}
+                      >
+                        {savingUserId === user.id ? '저장 중...' : '직급 저장'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
           <div className="panel soft" style={{ marginTop: 16 }}>
             <div className="panel-title">직급 추가</div>
