@@ -166,6 +166,7 @@ export default function SignupPage() {
       ) : null}
       <div className="auth-shell">
         <div className="panel soft">
+          <img className="auth-logo" src="/logo-ant.png" alt="" width={56} height={56} />
           <div className="panel-title">회원가입</div>
           <p className="panel-subtitle">
             이메일 중복확인을 통과한 뒤 가입 정보를 입력하면 가입이 완료됩니다.
