@@ -58,6 +58,11 @@ export default function AdminUsersPage() {
   }, [])
 
   const addRole = async () => {
+    if (!newRoleName.trim()) {
+      showError('직급 이름을 입력해 주세요.')
+      return
+    }
+
     if (addingRole) return
     setAddingRole(true)
     try {

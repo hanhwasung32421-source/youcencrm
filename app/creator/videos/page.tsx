@@ -41,7 +41,29 @@ export default function CreatorVideosPage() {
     void loadMyVideos().finally(() => setInitialLoading(false))
   }, [])
 
+  const isLikelyYoutubeUrl = (value: string) => {
+    try {
+      const url = new URL(value.trim())
+      return /(^|\.)youtube\.com$/.test(url.hostname) || url.hostname === 'youtu.be'
+    } catch {
+      return false
+    }
+  }
+
   const submit = async () => {
+    if (!youtubeUrl.trim()) {
+      showError('유튜브 영상 주소를 입력해 주세요.')
+      return
+    }
+    if (!isLikelyYoutubeUrl(youtubeUrl)) {
+      showError('유튜브 영상 주소 형식이 아닙니다. (youtube.com 또는 youtu.be 링크)')
+      return
+    }
+    if (!stockName.trim()) {
+      showError('주요 종목명을 입력해 주세요.')
+      return
+    }
+
     setLoading(true)
     try {
       const { ok, data } = await authedPostJson<{ error?: string }>('/api/videos/create', {
