@@ -80,6 +80,13 @@ export default function AdminUsersPage() {
   }
 
   const saveRole = async (userId: string, roleType: string) => {
+    const user = items.find((item) => item.id === userId)
+    const role = roles.find((item) => item.code === roleType)
+    const confirmed = window.confirm(
+      `${user?.name || '이 직원'}님의 직급을 "${role?.name || roleType}"(으)로 변경할까요?`
+    )
+    if (!confirmed) return
+
     if (savingUserId) return
     setSavingUserId(userId)
     try {

@@ -83,11 +83,24 @@ export default function AdminAttendancePage() {
     void loadData()
   }, [period])
 
+  const ATTENDANCE_ACTION_LABEL: Record<'vacation' | 'early_leave' | 'checkout', string> = {
+    vacation: '휴가',
+    early_leave: '조퇴',
+    checkout: '퇴근'
+  }
+
   const setAttendance = async (attendanceStatus: 'vacation' | 'early_leave' | 'checkout') => {
     if (!selectedUserId) {
       showError('직원을 먼저 선택해 주세요.')
       return
     }
+
+    const selectedUser = users.find((user) => user.id === selectedUserId)
+    const confirmed = window.confirm(
+      `${selectedUser?.name || '이 직원'}님의 ${selectedDate} 근태를 "${ATTENDANCE_ACTION_LABEL[attendanceStatus]}"(으)로 등록할까요?`
+    )
+    if (!confirmed) return
+
     setSaving(true)
     try {
       const { ok, data } = await authedPostJson<{ error?: string }>('/api/admin/attendance/set', {
