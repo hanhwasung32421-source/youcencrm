@@ -1,66 +1,16 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/session'
-import { getAutoCheckoutIso } from '@/lib/attendance/time'
+import {
+  getAutoCheckoutIso,
+  getFullWeekRangeKst,
+  getKstDateParts,
+  getKstDayEndIso,
+  getKstDayStartIso,
+  getMonthRangeKst,
+  isValidYmd
+} from '@/lib/attendance/time'
 import { TABLES } from '@/lib/supabase/tables'
 import { errorResponse } from '@/lib/api/error-response'
-
-function isValidYmd(value: string | null) {
-  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
-}
-
-function getKstParts(date = new Date()) {
-  const formatter = new Intl.DateTimeFormat('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    weekday: 'short'
-  })
-  const parts = Object.fromEntries(formatter.formatToParts(date).map((part) => [part.type, part.value]))
-  const y = Number(parts.year)
-  const m = Number(parts.month)
-  const d = Number(parts.day)
-  const weekday = String(parts.weekday || '')
-  return { y, m, d, ymd: `${parts.year}-${parts.month}-${parts.day}`, weekday }
-}
-
-function kstDayStartUtcIso(ymd: string) {
-  const [y, m, d] = ymd.split('-').map(Number)
-  const utcMillis = Date.UTC(y, m - 1, d, 0, 0, 0) - 9 * 60 * 60 * 1000
-  return new Date(utcMillis).toISOString()
-}
-
-function kstDayEndUtcIso(ymd: string) {
-  const [y, m, d] = ymd.split('-').map(Number)
-  const nextDayUtcMillis = Date.UTC(y, m - 1, d + 1, 0, 0, 0) - 9 * 60 * 60 * 1000
-  return new Date(nextDayUtcMillis - 1).toISOString()
-}
-
-function addDaysKst(ymd: string, deltaDays: number) {
-  const [y, m, d] = ymd.split('-').map(Number)
-  const baseUtcMillis = Date.UTC(y, m - 1, d, 12, 0, 0) - 9 * 60 * 60 * 1000
-  const shifted = new Date(baseUtcMillis + deltaDays * 24 * 60 * 60 * 1000)
-  return getKstParts(shifted).ymd
-}
-
-function getWeekRangeKst(todayYmd: string) {
-  const weekdayShort = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', weekday: 'short' }).format(
-    new Date()
-  )
-  const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
-  const dow = map[weekdayShort] ?? 0
-  const diffToMon = (dow + 6) % 7
-  const start = addDaysKst(todayYmd, -diffToMon)
-  const end = addDaysKst(start, 6)
-  return { start, end }
-}
-
-function getMonthRangeKst(y: number, m: number) {
-  const start = `${y}-${String(m).padStart(2, '0')}-01`
-  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate()
-  const end = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
-  return { start, end }
-}
 
 type Bucket = { count: number; durationSeconds: number; views: number; afterCheckInCount?: number; afterCheckOutCount?: number }
 
@@ -82,8 +32,8 @@ export async function GET(request: Request) {
 
     // 3) 검색 모드: 직원별 기간 표 반환
     if (isValidYmd(searchStart) && isValidYmd(searchEnd)) {
-      const startIso = kstDayStartUtcIso(searchStart!)
-      const endIso = kstDayEndUtcIso(searchEnd!)
+      const startIso = getKstDayStartIso(searchStart!)
+      const endIso = getKstDayEndIso(searchEnd!)
       const [{ data: users, error: usersError }, { data: videos, error }] = await Promise.all([
         supabaseAdmin
           .from(TABLES.crmUsers)
@@ -130,15 +80,15 @@ export async function GET(request: Request) {
     }
 
     // 2) 기본 표 모드: 오늘/주/월/년 집계
-    const kstNow = getKstParts(new Date())
+    const kstNow = getKstDateParts(new Date())
     const today = kstNow.ymd
-    const week = getWeekRangeKst(today)
+    const week = getFullWeekRangeKst(today)
     const month = getMonthRangeKst(kstNow.y, kstNow.m)
     const yearStart = `${kstNow.y}-01-01`
     const yearEnd = `${kstNow.y}-12-31`
 
-    const yearStartIso = kstDayStartUtcIso(yearStart)
-    const yearEndIso = kstDayEndUtcIso(yearEnd)
+    const yearStartIso = getKstDayStartIso(yearStart)
+    const yearEndIso = getKstDayEndIso(yearEnd)
 
     const [
       { data: users, error: usersError },
@@ -171,8 +121,8 @@ export async function GET(request: Request) {
     }
 
     const rangeToIso = (range: { start: string; end: string }) => ({
-      startIso: kstDayStartUtcIso(range.start),
-      endIso: kstDayEndUtcIso(range.end)
+      startIso: getKstDayStartIso(range.start),
+      endIso: getKstDayEndIso(range.end)
     })
     const todayIso = rangeToIso({ start: today, end: today })
     const weekIso = rangeToIso(week)
