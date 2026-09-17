@@ -9,6 +9,22 @@ export function getBearerToken(request: Request) {
   return authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
 }
 
+// supabase.auth.admin.listUsers()는 기본 perPage=50이라, 직원이 50명을 넘으면
+// 이메일 중복확인이 뒤쪽 페이지를 누락해 "사용 가능"으로 잘못 응답할 수 있었다.
+// 전체 페이지를 다 돌면서 찾는다(최대 20페이지=20,000명까지 안전).
+export async function findAuthUserByEmail(supabaseAdmin: ReturnType<typeof createSupabaseAdminClient>, email: string) {
+  const target = email.toLowerCase()
+  const perPage = 1000
+  for (let page = 1; page <= 20; page += 1) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage })
+    if (error) throw new Error(error.message)
+    const found = data.users.find((user) => user.email?.toLowerCase() === target)
+    if (found) return found
+    if (data.users.length < perPage) return null
+  }
+  return null
+}
+
 export async function getProfileByAccessToken(accessToken: string) {
   const supabasePublic = createSupabasePublicClient()
   const { data: userData, error: userError } = await supabasePublic.auth.getUser(accessToken)

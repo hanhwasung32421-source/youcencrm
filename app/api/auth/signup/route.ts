@@ -6,6 +6,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin-client'
 import { SIGNUP_CHALLENGE_SECRET } from '@/lib/app-config'
 import { TABLES } from '@/lib/supabase/tables'
 import { escapeLikePattern } from '@/lib/supabase/query-utils'
+import { findAuthUserByEmail } from '@/lib/auth/session'
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -38,13 +39,8 @@ export async function POST(request: Request) {
     const phone = `010-${body.phoneMid}-${body.phoneLast}`
 
     const supabaseAdmin = createSupabaseAdminClient()
-    const { data: userList, error: listError } = await supabaseAdmin.auth.admin.listUsers()
-    if (listError) {
-      return NextResponse.json({ error: listError.message }, { status: 500 })
-    }
-
-    const emailExists = (userList.users || []).some((user) => user.email?.toLowerCase() === body.email.toLowerCase())
-    if (emailExists) {
+    const existingAuthUser = await findAuthUserByEmail(supabaseAdmin, body.email)
+    if (existingAuthUser) {
       return NextResponse.json({ error: '이미 가입된 이메일입니다.' }, { status: 400 })
     }
 
