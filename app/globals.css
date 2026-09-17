@@ -24,9 +24,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)),
-    var(--bg);
+  background: var(--bg);
   color: var(--text);
   font-family: Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
