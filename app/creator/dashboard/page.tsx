@@ -6,7 +6,7 @@ import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { BarChartCard } from '@/components/bar-chart-card'
 import { PageLoading } from '@/components/page-loading'
-import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { authedFetchJson } from '@/lib/session/authed-fetch'
 
 type Stats = {
   todayRegisteredCount: number
@@ -57,17 +57,9 @@ export default function CreatorDashboardPage() {
   useEffect(() => {
     const run = async () => {
       try {
-        const supabase = createSupabaseBrowserClient()
-        const {
-          data: { session }
-        } = await supabase.auth.getSession()
-        if (!session?.access_token) return
-
-        const res = await fetch('/api/dashboard/creator', {
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        })
-        if (!res.ok) return
-        setStats((await res.json()) as Stats)
+        const { ok, data } = await authedFetchJson<Stats>('/api/dashboard/creator')
+        if (!ok) return
+        setStats(data)
       } finally {
         setLoading(false)
       }

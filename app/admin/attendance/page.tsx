@@ -5,7 +5,7 @@ import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
-import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
 import { formatWorkedHms } from '@/lib/attendance/time'
 
 type UserItem = {
@@ -56,17 +56,14 @@ export default function AdminAttendancePage() {
 
   const loadData = async () => {
     try {
-      const supabase = createSupabaseBrowserClient()
-      const {
-        data: { session }
-      } = await supabase.auth.getSession()
-      if (!session?.access_token) return
-
-      const res = await fetch(`/api/admin/attendance?period=${period}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
+      const { ok, data } = await authedFetchJson<{
+        users?: UserItem[]
+        rows?: AttendanceRow[]
+        weekDays?: Array<{ ymd: string; label: string }>
+        monthDays?: number[]
+        error?: string
+      }>(`/api/admin/attendance?period=${period}`)
+      if (!ok) {
         showError(data?.error || '근태 조회 실패')
         return
       }
@@ -93,23 +90,12 @@ export default function AdminAttendancePage() {
     }
     setSaving(true)
     try {
-      const supabase = createSupabaseBrowserClient()
-      const {
-        data: { session }
-      } = await supabase.auth.getSession()
-      if (!session?.access_token) return
-
-      const res = await fetch('/api/admin/attendance/set', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({
-          userId: selectedUserId,
-          workDate: selectedDate,
-          attendanceStatus
-        })
+      const { ok, data } = await authedPostJson<{ error?: string }>('/api/admin/attendance/set', {
+        userId: selectedUserId,
+        workDate: selectedDate,
+        attendanceStatus
       })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
+      if (!ok) {
         showError(data?.error || '근태 등록 실패')
         return
       }

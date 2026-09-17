@@ -7,7 +7,7 @@ import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
-import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { authedFetchJson } from '@/lib/session/authed-fetch'
 
 type Item = {
   id: string
@@ -50,24 +50,15 @@ function AdminUploadsPageInner() {
 
   const load = async (nextPage = page, nextSortKey = sortKey, nextSortDir = sortDir) => {
     try {
-      const supabase = createSupabaseBrowserClient()
-      const {
-        data: { session }
-      } = await supabase.auth.getSession()
-      if (!session?.access_token) return
-
       const qs = new URLSearchParams({
         userId,
         page: String(nextPage),
         sortKey: nextSortKey,
         sortDir: nextSortDir
       }).toString()
-      const res = await fetch(`/api/admin/videos/by-user?${qs}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        showError(json?.error || '업로드 내역 조회 실패')
+      const { ok, data: json } = await authedFetchJson<ApiResponse & { error?: string }>(`/api/admin/videos/by-user?${qs}`)
+      if (!ok) {
+        showError((json as any)?.error || '업로드 내역 조회 실패')
         return
       }
       setData(json as ApiResponse)

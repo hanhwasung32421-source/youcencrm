@@ -6,7 +6,7 @@ import { AppShell } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { BarChartCard } from '@/components/bar-chart-card'
-import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { authedFetchJson } from '@/lib/session/authed-fetch'
 import { addDaysToYmd, getAttendancePeriodRange, getKstYmd } from '@/lib/attendance/time'
 
 type Bucket = { count: number; durationSeconds: number; views: number; afterCheckInCount?: number; afterCheckOutCount?: number }
@@ -63,50 +63,32 @@ export default function AdminDashboardPage() {
 
   const loadTable = async () => {
     try {
-      const supabase = createSupabaseBrowserClient()
-      const {
-        data: { session }
-      } = await supabase.auth.getSession()
-      if (!session?.access_token) return
-
-      const res = await fetch('/api/dashboard/admin', {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      })
-      const data = (await res.json().catch(() => ({}))) as TableResponse & { error?: string }
-      if (!res.ok || (data as any)?.error) {
-        showError((data as any)?.error || '대시보드 조회 실패')
+      const { ok, data } = await authedFetchJson<TableResponse & { error?: string }>('/api/dashboard/admin')
+      if (!ok || data?.error) {
+        showError(data?.error || '대시보드 조회 실패')
         return
       }
-      if ((data as any).mode !== 'table') return
-      setTable(data as TableResponse)
+      if (data.mode !== 'table') return
+      setTable(data)
     } finally {
       setLoading(false)
     }
   }
 
   const search = async (override?: { start: string; end: string }) => {
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session }
-    } = await supabase.auth.getSession()
-    if (!session?.access_token) return
-
     const start = override?.start || searchStart
     const end = override?.end || searchEnd
     if (override?.start) setSearchStart(override.start)
     if (override?.end) setSearchEnd(override.end)
 
     const qs = new URLSearchParams({ searchStart: start, searchEnd: end }).toString()
-    const res = await fetch(`/api/dashboard/admin?${qs}`, {
-      headers: { Authorization: `Bearer ${session.access_token}` }
-    })
-    const data = (await res.json().catch(() => ({}))) as SearchResponse & { error?: string }
-    if (!res.ok || (data as any)?.error) {
-      showError((data as any)?.error || '검색 실패')
+    const { ok, data } = await authedFetchJson<SearchResponse & { error?: string }>(`/api/dashboard/admin?${qs}`)
+    if (!ok || data?.error) {
+      showError(data?.error || '검색 실패')
       return
     }
-    if ((data as any).mode !== 'search') return
-    setSearchResult(data as SearchResponse)
+    if (data.mode !== 'search') return
+    setSearchResult(data)
   }
 
   const openUploads = (row: Row) => {

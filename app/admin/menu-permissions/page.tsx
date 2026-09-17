@@ -5,7 +5,7 @@ import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
-import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
 import { MENU_DEFINITIONS } from '@/lib/menu/permissions'
 
 type MenuItem = (typeof MENU_DEFINITIONS)[number]
@@ -24,17 +24,13 @@ export default function AdminMenuPermissionsPage() {
 
   const loadPermissions = async () => {
     try {
-      const supabase = createSupabaseBrowserClient()
-      const {
-        data: { session }
-      } = await supabase.auth.getSession()
-      if (!session?.access_token) return
-
-      const res = await fetch('/api/admin/menu-permissions', {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      })
-      const data = await res.json()
-      if (!res.ok) {
+      const { ok, data } = await authedFetchJson<{
+        roles?: RoleItem[]
+        menus?: MenuItem[]
+        items?: Record<string, string[]>
+        error?: string
+      }>('/api/admin/menu-permissions')
+      if (!ok) {
         showError(data?.error || '메뉴 권한 조회 실패')
         return
       }
@@ -66,22 +62,11 @@ export default function AdminMenuPermissionsPage() {
   }
 
   const save = async () => {
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session }
-    } = await supabase.auth.getSession()
-    if (!session?.access_token) return
-
-    const res = await fetch('/api/admin/menu-permissions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({
-        roleType: selectedRole,
-        menuKeys: Array.from(selectedMenuKeys)
-      })
+    const { ok, data } = await authedPostJson<{ error?: string }>('/api/admin/menu-permissions', {
+      roleType: selectedRole,
+      menuKeys: Array.from(selectedMenuKeys)
     })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) {
+    if (!ok) {
       showError(data?.error || '메뉴 권한 저장 실패')
       return
     }

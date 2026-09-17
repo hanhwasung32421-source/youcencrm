@@ -5,7 +5,7 @@ import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
-import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
 
 type VideoItem = {
   id: string
@@ -28,22 +28,9 @@ export default function CreatorVideosPage() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [loading, setLoading] = useState(false)
 
-  const getAccessToken = async () => {
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session }
-    } = await supabase.auth.getSession()
-    return session?.access_token || ''
-  }
-
   const loadMyVideos = async () => {
-    const accessToken = await getAccessToken()
-    if (!accessToken) return
-    const res = await fetch('/api/videos/mine', {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    })
-    const data = await res.json()
-    if (!res.ok) {
+    const { ok, data } = await authedFetchJson<{ items?: VideoItem[]; error?: string }>('/api/videos/mine')
+    if (!ok) {
       showError(data?.error || '영상 목록 조회 실패')
       return
     }
@@ -57,19 +44,13 @@ export default function CreatorVideosPage() {
   const submit = async () => {
     setLoading(true)
     try {
-      const accessToken = await getAccessToken()
-      const res = await fetch('/api/videos/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({
-          youtubeUrl,
-          contentType,
-          stockName,
-          contentCategory: contentCategory || null
-        })
+      const { ok, data } = await authedPostJson<{ error?: string }>('/api/videos/create', {
+        youtubeUrl,
+        contentType,
+        stockName,
+        contentCategory: contentCategory || null
       })
-      const data = await res.json()
-      if (!res.ok) {
+      if (!ok) {
         showError(data?.error || '영상 저장 실패')
         return
       }

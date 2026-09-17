@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { getAccessToken } from '@/lib/session/authed-fetch'
 import { getFirstAllowedHref, getMenuDefinition, getMenuKeyByPath } from '@/lib/menu/permissions'
 import { fetchMe } from '@/lib/session/me-client'
 
@@ -21,19 +21,16 @@ export function AuthGuard({
   useEffect(() => {
     const run = async () => {
       try {
-        const supabase = createSupabaseBrowserClient()
-        const {
-          data: { session }
-        } = await supabase.auth.getSession()
+        const accessToken = await getAccessToken()
 
-        if (!session?.access_token) {
+        if (!accessToken) {
           router.replace('/login')
           return
         }
 
         let me: { roleType: string; allowedMenuKeys?: string[] }
         try {
-          me = await fetchMe(session.access_token)
+          me = await fetchMe(accessToken)
         } catch {
           router.replace('/login')
           return

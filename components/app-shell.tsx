@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { DEFAULT_ROLE_MENU_KEYS, MENU_DEFINITIONS } from '@/lib/menu/permissions'
 import { clearMeCache, fetchMe } from '@/lib/session/me-client'
+import { getAccessToken } from '@/lib/session/authed-fetch'
 
 type Me = {
   name: string
@@ -35,13 +36,10 @@ export function AppShell({
   useEffect(() => {
     const run = async () => {
       try {
-        const supabase = createSupabaseBrowserClient()
-        const {
-          data: { session }
-        } = await supabase.auth.getSession()
-        if (!session?.access_token) return
+        const accessToken = await getAccessToken()
+        if (!accessToken) return
 
-        const data = await fetchMe(session.access_token)
+        const data = await fetchMe(accessToken)
         setMe({
           name: data.name,
           roleType: data.roleType,

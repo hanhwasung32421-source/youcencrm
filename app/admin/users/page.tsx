@@ -5,7 +5,7 @@ import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
-import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
 
 type UserItem = {
   id: string
@@ -32,32 +32,20 @@ export default function AdminUsersPage() {
 
   const loadUsers = async () => {
     try {
-      const supabase = createSupabaseBrowserClient()
-      const {
-        data: { session }
-      } = await supabase.auth.getSession()
-      if (!session?.access_token) return
-
-      const [usersRes, rolesRes] = await Promise.all([
-        fetch('/api/admin/users', {
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        }),
-        fetch('/api/admin/roles', {
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        })
+      const [usersResult, rolesResult] = await Promise.all([
+        authedFetchJson<{ items: UserItem[]; error?: string }>('/api/admin/users'),
+        authedFetchJson<{ items: RoleItem[]; error?: string }>('/api/admin/roles')
       ])
-      const data = await usersRes.json()
-      const rolesData = await rolesRes.json().catch(() => ({}))
-      if (!usersRes.ok) {
-        showError(data?.error || '직원 목록 조회 실패')
+      if (!usersResult.ok) {
+        showError(usersResult.data?.error || '직원 목록 조회 실패')
         return
       }
-      if (!rolesRes.ok) {
-        showError(rolesData?.error || '직급 목록 조회 실패')
+      if (!rolesResult.ok) {
+        showError(rolesResult.data?.error || '직급 목록 조회 실패')
         return
       }
-      setItems(data.items || [])
-      setRoles(rolesData.items || [])
+      setItems(usersResult.data.items || [])
+      setRoles(rolesResult.data.items || [])
     } finally {
       setLoading(false)
     }
@@ -68,25 +56,11 @@ export default function AdminUsersPage() {
   }, [])
 
   const addRole = async () => {
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session }
-    } = await supabase.auth.getSession()
-    if (!session?.access_token) return
-
-    const res = await fetch('/api/admin/roles', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        code: newRoleCode || newRoleName,
-        name: newRoleName
-      })
+    const { ok, data } = await authedPostJson<{ error?: string }>('/api/admin/roles', {
+      code: newRoleCode || newRoleName,
+      name: newRoleName
     })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) {
+    if (!ok) {
       showError(data?.error || '직급 추가 실패')
       return
     }
@@ -98,23 +72,8 @@ export default function AdminUsersPage() {
   }
 
   const saveRole = async (userId: string, roleType: string) => {
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session }
-    } = await supabase.auth.getSession()
-    if (!session?.access_token) return
-
-    const res = await fetch('/api/admin/users/role', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({
-        userId,
-        roleType
-      })
-    })
-
-    const data = await res.json()
-    if (!res.ok) {
+    const { ok, data } = await authedPostJson<{ error?: string }>('/api/admin/users/role', { userId, roleType })
+    if (!ok) {
       showError(data?.error || '직급 저장 실패')
       return
     }
