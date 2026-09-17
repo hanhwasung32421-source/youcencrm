@@ -186,7 +186,7 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        <div className="panel">
+        <div className="panel soft">
           <div className="panel-header">
             <div>
               <div className="panel-title">검색</div>

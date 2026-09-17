@@ -287,6 +287,7 @@ textarea {
 
 .panel.soft {
   background: var(--panel-soft);
+  box-shadow: none;
 }
 
 .panel-title {
@@ -343,9 +344,10 @@ textarea {
 
 .card-value {
   margin-top: 10px;
-  font-size: 30px;
-  font-weight: 700;
+  font-size: 34px;
+  font-weight: 800;
   letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
 }
 
 .card-meta {
