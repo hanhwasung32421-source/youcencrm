@@ -142,22 +142,6 @@ export async function GET(request: Request) {
       rowMap.set(user.id, makeRow(user))
     }
 
-    for (const video of yearVideos || []) {
-      const ownerId = video.primary_owner_user_id
-      if (!ownerId) continue
-      if (!rowMap.has(ownerId)) {
-        rowMap.set(ownerId, makeRow({ id: ownerId, name: '이름 없음' }))
-      }
-      const row = rowMap.get(ownerId)!
-
-      addBucket(row.year, video)
-
-      const createdAt = String(video.created_at || '')
-      if (createdAt >= monthIso.startIso && createdAt <= monthIso.endIso) addBucket(row.month, video)
-      if (createdAt >= weekIso.startIso && createdAt <= weekIso.endIso) addBucket(row.week, video)
-      if (createdAt >= todayIso.startIso && createdAt <= todayIso.endIso) addBucket(row.today, video)
-    }
-
     const attendanceMap = new Map(
       (attendanceDays || []).map((item) => [
         `${item.user_id}:${item.work_date}`,
@@ -168,12 +152,22 @@ export async function GET(request: Request) {
       ])
     )
 
+    // yearVideos는 한 번만 훑는다: 버킷 집계와 출근/퇴근후 집계가 서로 다른
+    // 데이터에 의존하지 않으므로(둘 다 이 video 한 건이면 충분) 같은 루프에서 처리한다.
     for (const video of yearVideos || []) {
       const ownerId = video.primary_owner_user_id
       if (!ownerId) continue
-      const row = rowMap.get(ownerId)
-      if (!row) continue
+      if (!rowMap.has(ownerId)) {
+        rowMap.set(ownerId, makeRow({ id: ownerId, name: '이름 없음' }))
+      }
+      const row = rowMap.get(ownerId)!
       const createdAt = String(video.created_at || '')
+
+      addBucket(row.year, video)
+      if (createdAt >= monthIso.startIso && createdAt <= monthIso.endIso) addBucket(row.month, video)
+      if (createdAt >= weekIso.startIso && createdAt <= weekIso.endIso) addBucket(row.week, video)
+      if (createdAt >= todayIso.startIso && createdAt <= todayIso.endIso) addBucket(row.today, video)
+
       const createdYmd = createdAt.slice(0, 10)
       const attendance = attendanceMap.get(`${ownerId}:${createdYmd}`)
       if (!attendance?.checkInAt) continue
