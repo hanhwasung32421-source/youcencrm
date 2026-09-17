@@ -951,20 +951,27 @@ textarea {
   border: 1px solid var(--line);
 }
 
-.attendance-status-present {
-  color: #facc15;
+.attendance-status-present,
+.attendance-status-checkout {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.35);
 }
 
 .attendance-status-late {
-  color: #fb923c;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
-.attendance-status-checkout {
-  color: #ffffff;
+.attendance-status-early-leave {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.35);
 }
 
 .attendance-status-empty {
-  color: #cbd5e1;
+  color: var(--muted);
 }
 
 .attendance-compact-select {

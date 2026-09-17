@@ -39,7 +39,7 @@ const STATUS_CLASS_MAP: Record<string, string> = {
   퇴근: 'attendance-status-checkout',
   미입력: 'attendance-status-empty',
   휴가: 'attendance-status-empty',
-  조퇴: 'attendance-status-late'
+  조퇴: 'attendance-status-early-leave'
 }
 
 export default function AdminAttendancePage() {
