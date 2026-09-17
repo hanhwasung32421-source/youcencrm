@@ -795,6 +795,15 @@ textarea {
 .data-table-row {
   border-bottom: 1px solid var(--line);
   font-size: 13px;
+  transition: background-color 0.12s ease;
+}
+
+.data-table-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.data-table-row:hover {
+  background: var(--panel-soft);
 }
 
 .data-table-row:last-child {
