@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getProfileByAccessToken } from '@/lib/auth/session'
 import { getAttendanceWorkedSeconds, getKstYmd } from '@/lib/attendance/time'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 export async function POST(request: Request) {
   try {
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       .select('id')
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+      return errorResponse(updateError, '퇴근 등록 실패')
     }
 
     // 동시 요청이 먼저 퇴근을 반영했다면(0행 갱신) 중복 기록하지 않고 그 결과를 그대로 인정한다.
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
     })
 
     if (eventError) {
-      return NextResponse.json({ error: eventError.message }, { status: 500 })
+      return errorResponse(eventError, '퇴근 등록 실패')
     }
 
     await supabaseAdmin.from(TABLES.auditLogs).insert({
@@ -77,6 +78,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, checkedOutAt: nowIso, workedSeconds })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '퇴근 등록 실패' }, { status: 500 })
+    return errorResponse(e, '퇴근 등록 실패')
   }
 }

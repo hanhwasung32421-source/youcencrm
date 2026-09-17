@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getBearerToken, requireAdmin } from '@/lib/auth/session'
 import { getAttendanceWorkedSeconds } from '@/lib/attendance/time'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 const bodySchema = z.object({
   userId: z.string().uuid(),
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       .eq('id', dayId)
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+      return errorResponse(updateError, '퇴근 등록 실패')
     }
 
     const { error: eventError } = await supabaseAdmin.from(TABLES.attendanceEvents).insert({
@@ -51,12 +52,15 @@ export async function POST(request: Request) {
     })
 
     if (eventError) {
-      return NextResponse.json({ error: eventError.message }, { status: 500 })
+      return errorResponse(eventError, '퇴근 등록 실패')
     }
 
     return NextResponse.json({ ok: true, checkedOutAt: nowIso })
   } catch (e: any) {
     const firstIssue = e?.issues?.[0]
-    return NextResponse.json({ error: firstIssue?.message || e?.message || '퇴근 등록 실패' }, { status: 500 })
+    if (firstIssue?.message) {
+      return NextResponse.json({ error: firstIssue.message }, { status: 500 })
+    }
+    return errorResponse(e, '퇴근 등록 실패')
   }
 }

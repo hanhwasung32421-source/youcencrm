@@ -4,6 +4,7 @@ import { getBearerToken, getProfileByAccessToken } from '@/lib/auth/session'
 import { extractYoutubeVideoId, fetchYoutubeVideoMeta } from '@/lib/youtube/api'
 import { ensureDefaultYoutubeAccount } from '@/lib/youtube/default-account'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 const bodySchema = z.object({
   youtubeUrl: z.string().url(),
@@ -96,7 +97,7 @@ export async function POST(request: Request) {
         .single()
 
       if (channelInsertError || !newChannel) {
-        return NextResponse.json({ error: channelInsertError?.message || '채널 생성 실패' }, { status: 500 })
+        return errorResponse(channelInsertError, '채널 생성 실패')
       }
       channelId = newChannel.id
     }
@@ -131,7 +132,7 @@ export async function POST(request: Request) {
       .single()
 
     if (upsertError || !insertedVideo) {
-      return NextResponse.json({ error: upsertError?.message || '영상 저장 실패' }, { status: 500 })
+      return errorResponse(upsertError, '영상 저장 실패')
     }
 
     if (apiActive) {
@@ -164,6 +165,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, video: insertedVideo })
   } catch (e: any) {
     const firstIssue = e?.issues?.[0]
-    return NextResponse.json({ error: firstIssue?.message || e?.message || '영상 저장 실패' }, { status: 500 })
+    if (firstIssue?.message) {
+      return NextResponse.json({ error: firstIssue.message }, { status: 500 })
+    }
+    return errorResponse(e, '영상 저장 실패')
   }
 }

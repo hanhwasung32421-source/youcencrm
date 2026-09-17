@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/session'
 import { getAutoCheckoutIso } from '@/lib/attendance/time'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 function isValidYmd(value: string | null) {
   return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
@@ -97,11 +98,11 @@ export async function GET(request: Request) {
       ])
 
       if (usersError) {
-        return NextResponse.json({ error: usersError.message }, { status: 500 })
+        return errorResponse(usersError, '관리자 대시보드 조회 실패')
       }
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        return errorResponse(error, '관리자 대시보드 조회 실패')
       }
 
       const summary: Bucket = { count: 0, durationSeconds: 0, views: 0 }
@@ -162,11 +163,11 @@ export async function GET(request: Request) {
     ])
 
     if (usersError) {
-      return NextResponse.json({ error: usersError.message }, { status: 500 })
+      return errorResponse(usersError, '관리자 대시보드 조회 실패')
     }
 
     if (videosError) {
-      return NextResponse.json({ error: videosError.message }, { status: 500 })
+      return errorResponse(videosError, '관리자 대시보드 조회 실패')
     }
 
     const rangeToIso = (range: { start: string; end: string }) => ({
@@ -249,6 +250,6 @@ export async function GET(request: Request) {
       rows
     })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '관리자 대시보드 조회 실패' }, { status: 500 })
+    return errorResponse(e, '관리자 대시보드 조회 실패')
   }
 }

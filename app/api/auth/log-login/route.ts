@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getBearerToken, getProfileByAccessToken } from '@/lib/auth/session'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 export async function POST(request: Request) {
   try {
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return errorResponse(error, '로그인 기록 실패')
     }
 
     return NextResponse.json({ ok: true })

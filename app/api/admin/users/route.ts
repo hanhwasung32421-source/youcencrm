@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/session'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 export async function GET(request: Request) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
       .order('joined_at', { ascending: false })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return errorResponse(error, '직원 목록 조회 실패')
     }
 
     const { data: roles } = await supabaseAdmin.from(TABLES.roles).select('code, name')
@@ -28,6 +29,6 @@ export async function GET(request: Request) {
       }))
     })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '직원 목록 조회 실패' }, { status: 500 })
+    return errorResponse(e, '직원 목록 조회 실패')
   }
 }

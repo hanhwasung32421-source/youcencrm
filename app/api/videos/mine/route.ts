@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getProfileByAccessToken } from '@/lib/auth/session'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 export async function GET(request: Request) {
   try {
@@ -21,12 +22,12 @@ export async function GET(request: Request) {
     const { data, error } = await query
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return errorResponse(error, '영상 목록 조회 실패')
     }
 
     return NextResponse.json({ items: data || [] })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '영상 목록 조회 실패' }, { status: 500 })
+    return errorResponse(e, '영상 목록 조회 실패')
   }
 }
 

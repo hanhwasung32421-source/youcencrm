@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getBearerToken, requireAdmin } from '@/lib/auth/session'
 import { BUILTIN_ROLE_TYPES } from '@/lib/menu/permissions'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 const createRoleSchema = z.object({
   code: z.string().min(2).max(50),
@@ -22,11 +23,11 @@ export async function GET(request: Request) {
     const { supabaseAdmin } = await requireAdmin(getBearerToken(request))
     const { data, error } = await supabaseAdmin.from(TABLES.roles).select('code, name').order('created_at', { ascending: true })
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return errorResponse(error, '직급 목록 조회 실패')
     }
     return NextResponse.json({ items: data || [] })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '직급 목록 조회 실패' }, { status: 500 })
+    return errorResponse(e, '직급 목록 조회 실패')
   }
 }
 
@@ -53,13 +54,16 @@ export async function POST(request: Request) {
       .single()
 
     if (error || !data) {
-      return NextResponse.json({ error: error?.message || '직급 추가 실패' }, { status: 500 })
+      return errorResponse(error, '직급 추가 실패')
     }
 
     return NextResponse.json({ ok: true, item: data })
   } catch (e: any) {
     const firstIssue = e?.issues?.[0]
-    return NextResponse.json({ error: firstIssue?.message || e?.message || '직급 추가 실패' }, { status: 500 })
+    if (firstIssue?.message) {
+      return NextResponse.json({ error: firstIssue.message }, { status: 500 })
+    }
+    return errorResponse(e, '직급 추가 실패')
   }
 }
 

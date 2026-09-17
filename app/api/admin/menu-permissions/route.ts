@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getBearerToken, requireAdmin } from '@/lib/auth/session'
 import { MENU_DEFINITIONS, loadRoleMenuMap } from '@/lib/menu/permissions'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 const bodySchema = z.object({
   roleType: z.string(),
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
       items: roleMenuMap
     })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '메뉴 권한 조회 실패' }, { status: 500 })
+    return errorResponse(e, '메뉴 권한 조회 실패')
   }
 }
 
@@ -57,14 +58,10 @@ export async function POST(request: Request) {
     })
 
     if (error) {
-      return NextResponse.json(
-        {
-          error: error.message.includes('role_menu_permissions')
-            ? '메뉴 권한 테이블이 없습니다. SQL 파일을 먼저 실행해 주세요.'
-            : error.message
-        },
-        { status: 500 }
-      )
+      const fallback = error.message.includes('role_menu_permissions')
+        ? '메뉴 권한 테이블이 없습니다. SQL 파일을 먼저 실행해 주세요.'
+        : '메뉴 권한 저장 실패'
+      return errorResponse(error, fallback)
     }
 
     await supabaseAdmin.from(TABLES.auditLogs).insert({
@@ -80,6 +77,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '메뉴 권한 저장 실패' }, { status: 500 })
+    return errorResponse(e, '메뉴 권한 저장 실패')
   }
 }

@@ -7,6 +7,7 @@ import { SIGNUP_CHALLENGE_SECRET } from '@/lib/app-config'
 import { TABLES } from '@/lib/supabase/tables'
 import { escapeLikePattern } from '@/lib/supabase/query-utils'
 import { findAuthUserByEmail } from '@/lib/auth/session'
+import { errorResponse } from '@/lib/api/error-response'
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
     })
 
     if (profileError) {
-      return NextResponse.json({ error: `CRM 프로필 생성 실패: ${profileError.message}` }, { status: 500 })
+      return errorResponse(profileError, 'CRM 프로필 생성 실패')
     }
 
     const response = NextResponse.json({ ok: true })

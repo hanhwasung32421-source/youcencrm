@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getProfileByAccessToken } from '@/lib/auth/session'
 import { getKstYmd, isLateCheckIn } from '@/lib/attendance/time'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 export async function POST(request: Request) {
   try {
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
         .select('id')
 
       if (updateError) {
-        return NextResponse.json({ error: updateError.message }, { status: 500 })
+        return errorResponse(updateError, '출근 등록 실패')
       }
 
       // 동시 요청이 먼저 체크인을 반영했다면(위 필터에 안 걸려 0행 갱신) 그 결과를 그대로 인정한다.
@@ -96,7 +97,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true, checkedInAt: raceWinner.check_in_at })
         }
       }
-      return NextResponse.json({ error: createError.message }, { status: 500 })
+      return errorResponse(createError, '출근 등록 실패')
     }
     if (!createdDay) {
       return NextResponse.json({ error: '출근 등록 실패' }, { status: 500 })
@@ -120,6 +121,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, checkedInAt: nowIso })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '출근 등록 실패' }, { status: 500 })
+    return errorResponse(e, '출근 등록 실패')
   }
 }

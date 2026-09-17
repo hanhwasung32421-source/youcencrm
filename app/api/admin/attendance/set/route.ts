@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getBearerToken, requireAdmin } from '@/lib/auth/session'
 import { getAttendanceWorkedSeconds } from '@/lib/attendance/time'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 const bodySchema = z.object({
   userId: z.string().uuid(),
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
         .eq('id', existingDay.id)
 
       if (updateError) {
-        return NextResponse.json({ error: updateError.message }, { status: 500 })
+        return errorResponse(updateError, '근태 등록 실패')
       }
       dayId = existingDay.id
     } else {
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
         .single()
 
       if (upsertError || !day) {
-        return NextResponse.json({ error: upsertError?.message || '근태 저장 실패' }, { status: 500 })
+        return errorResponse(upsertError, '근태 저장 실패')
       }
       dayId = day.id
     }
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
     })
 
     if (eventError) {
-      return NextResponse.json({ error: eventError.message }, { status: 500 })
+      return errorResponse(eventError, '근태 등록 실패')
     }
 
     await supabaseAdmin.from(TABLES.auditLogs).insert({
@@ -92,6 +93,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '근태 등록 실패' }, { status: 500 })
+    return errorResponse(e, '근태 등록 실패')
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/session'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 const SORT_KEYS = ['title', 'view_count', 'uploaded_at'] as const
 
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
     const { data: items, error, count } = await query.range(from, to)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return errorResponse(error, '업로드 내역 조회 실패')
     }
 
     return NextResponse.json({
@@ -63,7 +64,7 @@ export async function GET(request: Request) {
         })) || []
     })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '업로드 내역 조회 실패' }, { status: 500 })
+    return errorResponse(e, '업로드 내역 조회 실패')
   }
 }
 

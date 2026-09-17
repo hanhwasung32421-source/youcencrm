@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getBearerToken, requireAdmin } from '@/lib/auth/session'
 import { BUILTIN_ROLE_TYPES } from '@/lib/menu/permissions'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 const bodySchema = z.object({
   userId: z.string().uuid(),
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       .eq('id', body.userId)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return errorResponse(error, '직급 저장 실패')
     }
 
     await supabaseAdmin.from(TABLES.auditLogs).insert({
@@ -52,6 +53,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '직급 저장 실패' }, { status: 500 })
+    return errorResponse(e, '직급 저장 실패')
   }
 }

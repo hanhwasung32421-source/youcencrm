@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getProfileByAccessToken } from '@/lib/auth/session'
 import { getAttendanceWorkedSeconds, getAutoCheckoutIso, getKstYmd } from '@/lib/attendance/time'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 export async function GET(request: Request) {
   try {
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
       .maybeSingle()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return errorResponse(error, '근태 상태 조회 실패')
     }
 
     if (day?.id && day.check_in_at && !day.check_out_at) {
@@ -75,6 +76,6 @@ export async function GET(request: Request) {
       isWorking: Boolean(day?.check_in_at && !day?.check_out_at)
     })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '근태 상태 조회 실패' }, { status: 500 })
+    return errorResponse(e, '근태 상태 조회 실패')
   }
 }

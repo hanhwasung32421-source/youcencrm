@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/session'
 import { getAttendanceDisplayStatus, getAttendancePeriodRange, getAttendanceWorkedSeconds, getMonthDayNumbers, getWeekdayLabel, getYmdList } from '@/lib/attendance/time'
 import { TABLES } from '@/lib/supabase/tables'
+import { errorResponse } from '@/lib/api/error-response'
 
 export async function GET(request: Request) {
   try {
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
       .order('name', { ascending: true })
 
     if (userError) {
-      return NextResponse.json({ error: userError.message }, { status: 500 })
+      return errorResponse(userError, '근태 조회 실패')
     }
 
     const { data: days, error: daysError } = await supabaseAdmin
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
       .order('work_date', { ascending: false })
 
     if (daysError) {
-      return NextResponse.json({ error: daysError.message }, { status: 500 })
+      return errorResponse(daysError, '근태 조회 실패')
     }
 
     const dayMap = new Map((days || []).map((day) => [`${day.user_id}:${day.work_date}`, day]))
@@ -112,6 +113,6 @@ export async function GET(request: Request) {
       })
     })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || '근태 조회 실패' }, { status: 500 })
+    return errorResponse(e, '근태 조회 실패')
   }
 }
