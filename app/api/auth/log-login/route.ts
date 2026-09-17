@@ -1,16 +1,10 @@
 import { NextResponse } from 'next/server'
-import { z } from 'zod'
-import { getProfileByAccessToken } from '@/lib/auth/session'
+import { getBearerToken, getProfileByAccessToken } from '@/lib/auth/session'
 import { TABLES } from '@/lib/supabase/tables'
-
-const bodySchema = z.object({
-  accessToken: z.string().min(10)
-})
 
 export async function POST(request: Request) {
   try {
-    const body = bodySchema.parse(await request.json())
-    const { profile, supabaseAdmin } = await getProfileByAccessToken(body.accessToken)
+    const { profile, supabaseAdmin } = await getProfileByAccessToken(getBearerToken(request))
 
     const forwarded = request.headers.get('x-forwarded-for') || ''
     const ip = forwarded.split(',')[0]?.trim() || null

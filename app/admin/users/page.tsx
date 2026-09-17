@@ -81,7 +81,6 @@ export default function AdminUsersPage() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        accessToken: session.access_token,
         code: newRoleCode || newRoleName,
         name: newRoleName
       })
@@ -107,9 +106,8 @@ export default function AdminUsersPage() {
 
     const res = await fetch('/api/admin/users/role', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
       body: JSON.stringify({
-        accessToken: session.access_token,
         userId,
         roleType
       })

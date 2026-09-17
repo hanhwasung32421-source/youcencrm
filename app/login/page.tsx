@@ -49,8 +49,7 @@ export default function LoginPage() {
       // 로그인 기록은 화면 전환을 막을 이유가 없으니 결과를 기다리지 않는다.
       void fetch('/api/auth/log-login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken: data.session.access_token })
+        headers: { Authorization: `Bearer ${data.session.access_token}` }
       })
 
       const me = await fetchMe(data.session.access_token)

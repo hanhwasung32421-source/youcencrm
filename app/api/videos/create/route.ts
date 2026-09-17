@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getProfileByAccessToken } from '@/lib/auth/session'
+import { getBearerToken, getProfileByAccessToken } from '@/lib/auth/session'
 import { extractYoutubeVideoId, fetchYoutubeVideoMeta } from '@/lib/youtube/api'
 import { ensureDefaultYoutubeAccount } from '@/lib/youtube/default-account'
 import { TABLES } from '@/lib/supabase/tables'
 
 const bodySchema = z.object({
-  accessToken: z.string().min(10),
   youtubeUrl: z.string().url(),
   contentType: z.enum(['longform', 'shortform']),
   stockName: z.string().min(1),
@@ -16,7 +15,7 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = bodySchema.parse(await request.json())
-    const { profile, supabaseAdmin } = await getProfileByAccessToken(body.accessToken)
+    const { profile, supabaseAdmin } = await getProfileByAccessToken(getBearerToken(request))
     const youtubeAccount = await ensureDefaultYoutubeAccount(supabaseAdmin)
 
     const apiActive = Boolean((youtubeAccount as any).api_active)

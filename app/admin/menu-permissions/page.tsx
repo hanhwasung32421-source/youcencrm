@@ -74,9 +74,8 @@ export default function AdminMenuPermissionsPage() {
 
     const res = await fetch('/api/admin/menu-permissions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
       body: JSON.stringify({
-        accessToken: session.access_token,
         roleType: selectedRole,
         menuKeys: Array.from(selectedMenuKeys)
       })

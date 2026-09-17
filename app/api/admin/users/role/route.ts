@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireAdmin } from '@/lib/auth/session'
+import { getBearerToken, requireAdmin } from '@/lib/auth/session'
 import { BUILTIN_ROLE_TYPES } from '@/lib/menu/permissions'
 import { TABLES } from '@/lib/supabase/tables'
 
 const bodySchema = z.object({
-  accessToken: z.string().min(10),
   userId: z.string().uuid(),
   roleType: z.string().min(1)
 })
@@ -13,7 +12,7 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = bodySchema.parse(await request.json())
-    const { profile, supabaseAdmin } = await requireAdmin(body.accessToken)
+    const { profile, supabaseAdmin } = await requireAdmin(getBearerToken(request))
     const roleCode = body.roleType.trim()
 
     const { data: roleRow } = await supabaseAdmin

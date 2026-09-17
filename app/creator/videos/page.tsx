@@ -60,9 +60,8 @@ export default function CreatorVideosPage() {
       const accessToken = await getAccessToken()
       const res = await fetch('/api/videos/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
-          accessToken,
           youtubeUrl,
           contentType,
           stockName,

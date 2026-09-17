@@ -1,20 +1,17 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireAdmin } from '@/lib/auth/session'
+import { getBearerToken, requireAdmin } from '@/lib/auth/session'
 import { MENU_DEFINITIONS, loadRoleMenuMap } from '@/lib/menu/permissions'
 import { TABLES } from '@/lib/supabase/tables'
 
 const bodySchema = z.object({
-  accessToken: z.string().min(10),
   roleType: z.string(),
   menuKeys: z.array(z.string())
 })
 
 export async function GET(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization') || ''
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
-    const { profile, supabaseAdmin } = await requireAdmin(token)
+    const { profile, supabaseAdmin } = await requireAdmin(getBearerToken(request))
 
     if (profile.role_type !== 'super_admin') {
       return NextResponse.json({ error: '총 관리자만 메뉴 권한을 관리할 수 있습니다.' }, { status: 403 })
@@ -35,7 +32,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = bodySchema.parse(await request.json())
-    const { profile, supabaseAdmin } = await requireAdmin(body.accessToken)
+    const { profile, supabaseAdmin } = await requireAdmin(getBearerToken(request))
 
     if (profile.role_type !== 'super_admin') {
       return NextResponse.json({ error: '총 관리자만 메뉴 권한을 저장할 수 있습니다.' }, { status: 403 })

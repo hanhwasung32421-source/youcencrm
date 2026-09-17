@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireAdmin } from '@/lib/auth/session'
+import { getBearerToken, requireAdmin } from '@/lib/auth/session'
 import { BUILTIN_ROLE_TYPES } from '@/lib/menu/permissions'
 import { TABLES } from '@/lib/supabase/tables'
 
 const createRoleSchema = z.object({
-  accessToken: z.string().min(10),
   code: z.string().min(2).max(50),
   name: z.string().min(1).max(50)
 })
@@ -20,9 +19,7 @@ function normalizeCode(input: string) {
 
 export async function GET(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization') || ''
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
-    const { supabaseAdmin } = await requireAdmin(token)
+    const { supabaseAdmin } = await requireAdmin(getBearerToken(request))
     const { data, error } = await supabaseAdmin.from(TABLES.roles).select('code, name').order('created_at', { ascending: true })
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -36,7 +33,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = createRoleSchema.parse(await request.json())
-    const { profile, supabaseAdmin } = await requireAdmin(body.accessToken)
+    const { profile, supabaseAdmin } = await requireAdmin(getBearerToken(request))
     if (profile.role_type !== 'super_admin') {
       return NextResponse.json({ error: '총 관리자만 직급을 추가할 수 있습니다.' }, { status: 403 })
     }

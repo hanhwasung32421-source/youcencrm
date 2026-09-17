@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireAdmin } from '@/lib/auth/session'
+import { getBearerToken, requireAdmin } from '@/lib/auth/session'
 import { getAttendanceWorkedSeconds } from '@/lib/attendance/time'
 import { TABLES } from '@/lib/supabase/tables'
 
 const bodySchema = z.object({
-  accessToken: z.string().min(10),
   userId: z.string().uuid(),
   workDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 })
@@ -13,7 +12,7 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = bodySchema.parse(await request.json())
-    const { supabaseAdmin } = await requireAdmin(body.accessToken)
+    const { supabaseAdmin } = await requireAdmin(getBearerToken(request))
     const nowIso = new Date().toISOString()
 
     const { data: existingDay } = await supabaseAdmin
