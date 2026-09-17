@@ -21,5 +21,14 @@ export function useToast() {
 
 export function Toast({ toast }: { toast: ToastState }) {
   if (!toast) return null
-  return <div className={`app-toast ${toast.tone}`}>{toast.text}</div>
+  const isError = toast.tone === 'error'
+  return (
+    <div
+      className={`app-toast ${toast.tone}`}
+      role={isError ? 'alert' : 'status'}
+      aria-live={isError ? 'assertive' : 'polite'}
+    >
+      {toast.text}
+    </div>
+  )
 }

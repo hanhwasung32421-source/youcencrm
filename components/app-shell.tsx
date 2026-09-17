@@ -69,21 +69,22 @@ export function AppShell({
 
   return (
     <div className="workspace">
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      <aside id="app-sidebar" className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-section">
           <div className="sidebar-caption">workspace</div>
-          <div className="sidebar-nav">
+          <nav className="sidebar-nav" aria-label="주요 메뉴">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 className={`sidebar-link ${pathname === item.href ? 'active' : ''}`}
                 href={item.href}
+                aria-current={pathname === item.href ? 'page' : undefined}
                 onClick={() => setSidebarOpen(false)}
               >
                 <span>{item.label}</span>
               </Link>
             ))}
-          </div>
+          </nav>
         </div>
 
         <div className="sidebar-section">
@@ -105,7 +106,12 @@ export function AppShell({
       </aside>
 
       <section className="content-area">
-        <button className="button secondary sidebar-toggle" onClick={() => setSidebarOpen((prev) => !prev)}>
+        <button
+          className="button secondary sidebar-toggle"
+          aria-expanded={sidebarOpen}
+          aria-controls="app-sidebar"
+          onClick={() => setSidebarOpen((prev) => !prev)}
+        >
           {sidebarOpen ? '메뉴 닫기' : '메뉴 열기'}
         </button>
         <div className="document-head">
