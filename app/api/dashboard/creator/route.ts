@@ -11,41 +11,40 @@ export async function GET(request: Request) {
     const today = new Date().toISOString().slice(0, 10)
     const dayStart = `${today}T00:00:00.000Z`
 
-    const { count } = await supabaseAdmin
-      .from(TABLES.videos)
-      .select('*', { count: 'exact', head: true })
-      .eq('primary_owner_user_id', profile.id)
-      .gte('created_at', dayStart)
-
-    const { data: latest } = await supabaseAdmin
-      .from(TABLES.videos)
-      .select('id, title, stock_name, content_type, view_count, published_at, created_at, duration_seconds, youtube_url')
-      .eq('primary_owner_user_id', profile.id)
-      .order('created_at', { ascending: false })
-      .limit(6)
-
     const since = new Date()
     since.setDate(since.getDate() - 6)
     const sinceIso = since.toISOString()
 
-    const { data: chartRows } = await supabaseAdmin
-      .from(TABLES.videos)
-      .select('id, title, content_type, view_count, duration_seconds, created_at')
-      .eq('primary_owner_user_id', profile.id)
-      .gte('created_at', sinceIso)
-      .order('created_at', { ascending: true })
-
-    const { count: longformCount } = await supabaseAdmin
-      .from(TABLES.videos)
-      .select('*', { count: 'exact', head: true })
-      .eq('primary_owner_user_id', profile.id)
-      .eq('content_type', 'longform')
-
-    const { count: shortformCount } = await supabaseAdmin
-      .from(TABLES.videos)
-      .select('*', { count: 'exact', head: true })
-      .eq('primary_owner_user_id', profile.id)
-      .eq('content_type', 'shortform')
+    const [{ count }, { data: latest }, { data: chartRows }, { count: longformCount }, { count: shortformCount }] =
+      await Promise.all([
+        supabaseAdmin
+          .from(TABLES.videos)
+          .select('*', { count: 'exact', head: true })
+          .eq('primary_owner_user_id', profile.id)
+          .gte('created_at', dayStart),
+        supabaseAdmin
+          .from(TABLES.videos)
+          .select('id, title, stock_name, content_type, view_count, published_at, created_at, duration_seconds, youtube_url')
+          .eq('primary_owner_user_id', profile.id)
+          .order('created_at', { ascending: false })
+          .limit(6),
+        supabaseAdmin
+          .from(TABLES.videos)
+          .select('id, title, content_type, view_count, duration_seconds, created_at')
+          .eq('primary_owner_user_id', profile.id)
+          .gte('created_at', sinceIso)
+          .order('created_at', { ascending: true }),
+        supabaseAdmin
+          .from(TABLES.videos)
+          .select('*', { count: 'exact', head: true })
+          .eq('primary_owner_user_id', profile.id)
+          .eq('content_type', 'longform'),
+        supabaseAdmin
+          .from(TABLES.videos)
+          .select('*', { count: 'exact', head: true })
+          .eq('primary_owner_user_id', profile.id)
+          .eq('content_type', 'shortform')
+      ])
 
     const dayLabels = Array.from({ length: 7 }).map((_, index) => {
       const date = new Date()

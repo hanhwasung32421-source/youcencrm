@@ -83,21 +83,22 @@ export async function GET(request: Request) {
     if (isValidYmd(searchStart) && isValidYmd(searchEnd)) {
       const startIso = kstDayStartUtcIso(searchStart!)
       const endIso = kstDayEndUtcIso(searchEnd!)
-      const { data: users, error: usersError } = await supabaseAdmin
-        .from(TABLES.crmUsers)
-        .select('id, name, employment_status')
-        .neq('employment_status', 'inactive')
-        .order('name', { ascending: true })
+      const [{ data: users, error: usersError }, { data: videos, error }] = await Promise.all([
+        supabaseAdmin
+          .from(TABLES.crmUsers)
+          .select('id, name, employment_status')
+          .neq('employment_status', 'inactive')
+          .order('name', { ascending: true }),
+        supabaseAdmin
+          .from(TABLES.videos)
+          .select('primary_owner_user_id, duration_seconds, view_count')
+          .gte('created_at', startIso)
+          .lte('created_at', endIso)
+      ])
 
       if (usersError) {
         return NextResponse.json({ error: usersError.message }, { status: 500 })
       }
-
-      const { data: videos, error } = await supabaseAdmin
-        .from(TABLES.videos)
-        .select('primary_owner_user_id, duration_seconds, view_count')
-        .gte('created_at', startIso)
-        .lte('created_at', endIso)
 
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
@@ -138,21 +139,31 @@ export async function GET(request: Request) {
     const yearStartIso = kstDayStartUtcIso(yearStart)
     const yearEndIso = kstDayEndUtcIso(yearEnd)
 
-    const { data: users, error: usersError } = await supabaseAdmin
-      .from(TABLES.crmUsers)
-      .select('id, name, employment_status')
-      .neq('employment_status', 'inactive')
-      .order('name', { ascending: true })
+    const [
+      { data: users, error: usersError },
+      { data: yearVideos, error: videosError },
+      { data: attendanceDays }
+    ] = await Promise.all([
+      supabaseAdmin
+        .from(TABLES.crmUsers)
+        .select('id, name, employment_status')
+        .neq('employment_status', 'inactive')
+        .order('name', { ascending: true }),
+      supabaseAdmin
+        .from(TABLES.videos)
+        .select('primary_owner_user_id, created_at, duration_seconds, view_count')
+        .gte('created_at', yearStartIso)
+        .lte('created_at', yearEndIso),
+      supabaseAdmin
+        .from(TABLES.attendanceDays)
+        .select('user_id, work_date, check_in_at, check_out_at')
+        .gte('work_date', yearStart)
+        .lte('work_date', yearEnd)
+    ])
 
     if (usersError) {
       return NextResponse.json({ error: usersError.message }, { status: 500 })
     }
-
-    const { data: yearVideos, error: videosError } = await supabaseAdmin
-      .from(TABLES.videos)
-      .select('primary_owner_user_id, created_at, duration_seconds, view_count')
-      .gte('created_at', yearStartIso)
-      .lte('created_at', yearEndIso)
 
     if (videosError) {
       return NextResponse.json({ error: videosError.message }, { status: 500 })
@@ -195,12 +206,6 @@ export async function GET(request: Request) {
       if (createdAt >= weekIso.startIso && createdAt <= weekIso.endIso) addBucket(row.week, video)
       if (createdAt >= todayIso.startIso && createdAt <= todayIso.endIso) addBucket(row.today, video)
     }
-
-    const { data: attendanceDays } = await supabaseAdmin
-      .from(TABLES.attendanceDays)
-      .select('user_id, work_date, check_in_at, check_out_at')
-      .gte('work_date', yearStart)
-      .lte('work_date', yearEnd)
 
     const attendanceMap = new Map(
       (attendanceDays || []).map((item) => [

@@ -60,10 +60,10 @@ export function getDefaultRoleMenuMap(): Record<string, MenuKey[]> {
 
 export async function loadRoleMenuMap(supabaseAdmin: any): Promise<Record<string, MenuKey[]>> {
   const defaults = getDefaultRoleMenuMap()
-  const { data: roles } = await supabaseAdmin.from(TABLES.roles).select('code').order('created_at', { ascending: true })
-  const { data, error } = await supabaseAdmin
-    .from(TABLES.roleMenuPermissions)
-    .select('role_type, menu_key, can_view')
+  const [{ data: roles }, { data, error }] = await Promise.all([
+    supabaseAdmin.from(TABLES.roles).select('code').order('created_at', { ascending: true }),
+    supabaseAdmin.from(TABLES.roleMenuPermissions).select('role_type, menu_key, can_view')
+  ])
 
   if (error || !data) {
     return defaults

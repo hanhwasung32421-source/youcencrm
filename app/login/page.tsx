@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { fetchMe } from '@/lib/session/me-client'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -45,22 +46,14 @@ export default function LoginPage() {
         return
       }
 
-      await fetch('/api/auth/log-login', {
+      // 로그인 기록은 화면 전환을 막을 이유가 없으니 결과를 기다리지 않는다.
+      void fetch('/api/auth/log-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken: data.session.access_token })
       })
 
-      const meRes = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${data.session.access_token}` }
-      })
-
-      if (!meRes.ok) {
-        setError('프로필 조회에 실패했습니다.')
-        return
-      }
-
-      const me = (await meRes.json()) as { roleType: string }
+      const me = await fetchMe(data.session.access_token)
       if (['super_admin', 'admin'].includes(me.roleType)) {
         router.push('/admin/dashboard')
       } else {

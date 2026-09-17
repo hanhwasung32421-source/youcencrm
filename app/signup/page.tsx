@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { fetchMe } from '@/lib/session/me-client'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -128,22 +129,21 @@ export default function SignupPage() {
         return
       }
 
-      await fetch('/api/auth/log-login', {
+      // 로그인 기록은 화면 전환을 막을 이유가 없으니 결과를 기다리지 않는다.
+      void fetch('/api/auth/log-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken: signInData.session.access_token })
       })
 
-      const meRes = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${signInData.session.access_token}` }
-      })
-
-      if (!meRes.ok) {
+      let me: { roleType: string }
+      try {
+        me = await fetchMe(signInData.session.access_token)
+      } catch {
         setMessage('회원가입이 완료되었습니다. 자동 로그인 후 화면 이동에 실패했습니다.')
         return
       }
 
-      const me = (await meRes.json()) as { roleType: string }
       setMessage('회원가입이 완료되어 자동 로그인됩니다.')
       router.push(['super_admin', 'admin'].includes(me.roleType) ? '/admin/dashboard' : '/creator/dashboard')
     } catch (e: any) {

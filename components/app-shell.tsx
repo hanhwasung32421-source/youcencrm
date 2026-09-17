@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { DEFAULT_ROLE_MENU_KEYS, MENU_DEFINITIONS } from '@/lib/menu/permissions'
+import { clearMeCache, fetchMe } from '@/lib/session/me-client'
 
 type Me = {
   name: string
@@ -35,11 +36,7 @@ export function AppShell({
         } = await supabase.auth.getSession()
         if (!session?.access_token) return
 
-        const res = await fetch('/api/auth/me', {
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        })
-        if (!res.ok) return
-        const data = (await res.json()) as Me & { crmUserId: string; employmentStatus: string }
+        const data = await fetchMe(session.access_token)
         setMe({
           name: data.name,
           roleType: data.roleType,
@@ -55,6 +52,7 @@ export function AppShell({
   const logout = async () => {
     const supabase = createSupabaseBrowserClient()
     await supabase.auth.signOut()
+    clearMeCache()
     router.replace('/login')
   }
 

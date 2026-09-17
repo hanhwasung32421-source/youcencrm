@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { getFirstAllowedHref, getMenuDefinition, getMenuKeyByPath } from '@/lib/menu/permissions'
+import { fetchMe } from '@/lib/session/me-client'
 
 export function AuthGuard({
   children,
@@ -30,16 +31,14 @@ export function AuthGuard({
           return
         }
 
-        const res = await fetch('/api/auth/me', {
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        })
-
-        if (!res.ok) {
+        let me: { roleType: string; allowedMenuKeys?: string[] }
+        try {
+          me = await fetchMe(session.access_token)
+        } catch {
           router.replace('/login')
           return
         }
 
-        const me = (await res.json()) as { roleType: string; allowedMenuKeys?: string[] }
         if (requireAdmin && !['super_admin', 'admin'].includes(me.roleType)) {
           router.replace('/creator/dashboard')
           return
