@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { getKstYmd } from '@/lib/attendance/time'
+import { getDisplayVersion } from '@/lib/version/format'
 
 type AttendanceStatus = 'not_started' | 'present' | 'late' | 'vacation' | 'early_leave' | 'review_needed'
 
 export function TopbarAttendanceControls({ version }: { version: string }) {
   const pathname = usePathname()
+  const [displayVersion, setDisplayVersion] = useState(() => getDisplayVersion(version))
   const [visible, setVisible] = useState(false)
   const [checkingIn, setCheckingIn] = useState(false)
   const [checkingOut, setCheckingOut] = useState(false)
@@ -102,6 +104,14 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
     return () => window.clearInterval(timer)
   }, [todayYmd])
 
+  useEffect(() => {
+    setDisplayVersion(getDisplayVersion(version))
+    const timer = window.setInterval(() => {
+      setDisplayVersion(getDisplayVersion(version))
+    }, 60000)
+    return () => window.clearInterval(timer)
+  }, [version])
+
   const isCheckoutEnabled = useMemo(() => {
     if (!checkInAt || checkOutAt) return false
     if (!checkoutAvailableAt) return true
@@ -168,7 +178,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
   }
 
   if (!visible) {
-    return <div className="top-version">{version}</div>
+    return <div className="top-version">{displayVersion}</div>
   }
 
   const showCheckInButton = !checkInAt
@@ -187,7 +197,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
             퇴근
           </button>
         ) : null}
-        <div className="top-version">{version}</div>
+        <div className="top-version">{displayVersion}</div>
       </div>
     </>
   )
