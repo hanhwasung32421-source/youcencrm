@@ -27,19 +27,36 @@ export default function CreatorVideosPage() {
   const { toast, showSuccess, showError } = useToast()
   const [initialLoading, setInitialLoading] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({ pageSize: 20, totalCount: 0 })
 
-  const loadMyVideos = async () => {
-    const { ok, data } = await authedFetchJson<{ items?: VideoItem[]; error?: string }>('/api/videos/mine')
+  const loadMyVideos = async (targetPage = page) => {
+    const { ok, data } = await authedFetchJson<{
+      items?: VideoItem[]
+      pagination?: { page: number; pageSize: number; totalCount: number }
+      error?: string
+    }>(`/api/videos/mine?page=${targetPage}`)
     if (!ok) {
       showError(data?.error || '영상 목록 조회 실패')
       return
     }
     setItems(data.items || [])
+    if (data.pagination) {
+      setPagination({ pageSize: data.pagination.pageSize, totalCount: data.pagination.totalCount })
+    }
   }
 
   useEffect(() => {
-    void loadMyVideos().finally(() => setInitialLoading(false))
+    void loadMyVideos(1).finally(() => setInitialLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const totalPages = Math.max(Math.ceil(pagination.totalCount / pagination.pageSize), 1)
+
+  const goToPage = async (nextPage: number) => {
+    setPage(nextPage)
+    await loadMyVideos(nextPage)
+  }
 
   const isLikelyYoutubeUrl = (value: string) => {
     try {
@@ -154,6 +171,19 @@ export default function CreatorVideosPage() {
                 ))
               )}
             </div>
+            {pagination.totalCount > pagination.pageSize ? (
+              <div className="toolbar" style={{ marginTop: 16, justifyContent: 'center' }}>
+                <button className="button secondary" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
+                  이전
+                </button>
+                <span className="small muted">
+                  {page} / {totalPages} 페이지 · 총 {pagination.totalCount}건
+                </span>
+                <button className="button secondary" disabled={page >= totalPages} onClick={() => goToPage(page + 1)}>
+                  다음
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </AppShell>
