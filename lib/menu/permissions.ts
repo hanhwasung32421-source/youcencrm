@@ -17,6 +17,7 @@ export const MENU_DEFINITIONS = [
   { key: 'creator_dashboard', label: '대시보드', href: '/creator/dashboard', audience: 'creator' },
   { key: 'creator_videos', label: '영상등록', href: '/creator/videos', audience: 'creator' },
   { key: 'admin_dashboard', label: '대시보드 - 관리자', href: '/admin/dashboard', audience: 'admin' },
+  { key: 'admin_channels', label: '채널 현황 - 관리자', href: '/admin/channels', audience: 'admin' },
   { key: 'admin_users', label: '직급관리 - 관리자', href: '/admin/users', audience: 'admin' },
   { key: 'admin_attendance', label: '근태관리 - 관리자', href: '/admin/attendance', audience: 'admin' },
   { key: 'admin_menu_permissions', label: '메뉴권한 - 관리자', href: '/admin/menu-permissions', audience: 'admin' }
@@ -31,8 +32,8 @@ type PermissionRow = {
 }
 
 export const DEFAULT_ROLE_MENU_KEYS: Record<BuiltinRoleType, MenuKey[]> = {
-  super_admin: ['admin_dashboard', 'admin_users', 'admin_attendance', 'admin_menu_permissions'],
-  admin: ['admin_dashboard', 'admin_users', 'admin_attendance'],
+  super_admin: ['admin_dashboard', 'admin_channels', 'admin_users', 'admin_attendance', 'admin_menu_permissions'],
+  admin: ['admin_dashboard', 'admin_channels', 'admin_users', 'admin_attendance'],
   general_manager: ['creator_dashboard', 'creator_videos'],
   manager: ['creator_dashboard', 'creator_videos'],
   assistant_manager: ['creator_dashboard', 'creator_videos'],
@@ -78,6 +79,11 @@ export async function loadRoleMenuMap(supabaseAdmin: any): Promise<Record<string
     if (!next[roleCode]) next[roleCode] = []
   }
 
+  // DB에 저장된 적이 한 번도 없는 menu_key는 "새로 배포된 메뉴"로 간주한다. 이미 커스터마이징된
+  // 역할이라도 신규 메뉴만큼은 기본값으로 보충해서, 관리자가 메뉴권한 화면에서 직접 켜주기 전까지
+  // 화면 자체가 통째로 사라지는 일이 없게 한다.
+  const configuredMenuKeys = new Set(rows.map((row) => row.menu_key))
+
   for (const row of rows) {
     if (!row.can_view) continue
     if (!MENU_DEFINITIONS.some((menu) => menu.key === row.menu_key)) continue
@@ -88,6 +94,12 @@ export async function loadRoleMenuMap(supabaseAdmin: any): Promise<Record<string
   for (const role of Object.keys(defaults)) {
     if (next[role].length === 0 && defaults[role].length > 0) {
       next[role] = [...defaults[role]]
+      continue
+    }
+    for (const key of defaults[role]) {
+      if (!configuredMenuKeys.has(key) && !next[role].includes(key)) {
+        next[role].push(key)
+      }
     }
   }
 
