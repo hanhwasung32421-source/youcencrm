@@ -2,7 +2,7 @@ export const SIGNUP_CHALLENGE_SECRET =
   process.env.SIGNUP_CHALLENGE_SECRET || 'queen-ant-media-crm-signup-secret'
 
 // 운영 도메인 고정 (Supabase Magic Link/Confirm 링크가 localhost로 떨어지는 문제 방지)
-export const APP_ORIGIN = process.env.APP_ORIGIN || 'https://youcencrm.vercel.app'
+export const APP_ORIGIN = process.env.APP_ORIGIN || 'https://youtubecrm.vercel.app'
 
 export const DEFAULT_YOUTUBE_ACCOUNT_NAME = process.env.DEFAULT_YOUTUBE_ACCOUNT_NAME || '개미들의 주식노트'
 
