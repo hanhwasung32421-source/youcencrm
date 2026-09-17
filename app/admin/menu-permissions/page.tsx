@@ -20,6 +20,7 @@ export default function AdminMenuPermissionsPage() {
   const [items, setItems] = useState<Record<string, string[]>>({})
   const [menus, setMenus] = useState<MenuItem[]>([...MENU_DEFINITIONS])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const { toast, showSuccess, showError } = useToast()
 
   const loadPermissions = async () => {
@@ -62,17 +63,23 @@ export default function AdminMenuPermissionsPage() {
   }
 
   const save = async () => {
-    const { ok, data } = await authedPostJson<{ error?: string }>('/api/admin/menu-permissions', {
-      roleType: selectedRole,
-      menuKeys: Array.from(selectedMenuKeys)
-    })
-    if (!ok) {
-      showError(data?.error || '메뉴 권한 저장 실패')
-      return
-    }
+    if (saving) return
+    setSaving(true)
+    try {
+      const { ok, data } = await authedPostJson<{ error?: string }>('/api/admin/menu-permissions', {
+        roleType: selectedRole,
+        menuKeys: Array.from(selectedMenuKeys)
+      })
+      if (!ok) {
+        showError(data?.error || '메뉴 권한 저장 실패')
+        return
+      }
 
-    showSuccess('메뉴 권한이 저장되었습니다.')
-    await loadPermissions()
+      showSuccess('메뉴 권한이 저장되었습니다.')
+      await loadPermissions()
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -117,8 +124,8 @@ export default function AdminMenuPermissionsPage() {
               </div>
             </div>
 
-            <button className="button" onClick={save}>
-              메뉴 권한 저장
+            <button className="button" disabled={saving} onClick={save}>
+              {saving ? '저장 중...' : '메뉴 권한 저장'}
             </button>
           </div>
 

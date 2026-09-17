@@ -28,6 +28,8 @@ export default function AdminUsersPage() {
   const [newRoleName, setNewRoleName] = useState('')
   const [newRoleCode, setNewRoleCode] = useState('')
   const [loading, setLoading] = useState(true)
+  const [savingUserId, setSavingUserId] = useState<string | null>(null)
+  const [addingRole, setAddingRole] = useState(false)
   const { toast, showSuccess, showError } = useToast()
 
   const loadUsers = async () => {
@@ -56,30 +58,42 @@ export default function AdminUsersPage() {
   }, [])
 
   const addRole = async () => {
-    const { ok, data } = await authedPostJson<{ error?: string }>('/api/admin/roles', {
-      code: newRoleCode || newRoleName,
-      name: newRoleName
-    })
-    if (!ok) {
-      showError(data?.error || '직급 추가 실패')
-      return
-    }
+    if (addingRole) return
+    setAddingRole(true)
+    try {
+      const { ok, data } = await authedPostJson<{ error?: string }>('/api/admin/roles', {
+        code: newRoleCode || newRoleName,
+        name: newRoleName
+      })
+      if (!ok) {
+        showError(data?.error || '직급 추가 실패')
+        return
+      }
 
-    setNewRoleName('')
-    setNewRoleCode('')
-    showSuccess('직급이 추가되었습니다. 기본 메뉴 권한은 없습니다.')
-    await loadUsers()
+      setNewRoleName('')
+      setNewRoleCode('')
+      showSuccess('직급이 추가되었습니다. 기본 메뉴 권한은 없습니다.')
+      await loadUsers()
+    } finally {
+      setAddingRole(false)
+    }
   }
 
   const saveRole = async (userId: string, roleType: string) => {
-    const { ok, data } = await authedPostJson<{ error?: string }>('/api/admin/users/role', { userId, roleType })
-    if (!ok) {
-      showError(data?.error || '직급 저장 실패')
-      return
-    }
+    if (savingUserId) return
+    setSavingUserId(userId)
+    try {
+      const { ok, data } = await authedPostJson<{ error?: string }>('/api/admin/users/role', { userId, roleType })
+      if (!ok) {
+        showError(data?.error || '직급 저장 실패')
+        return
+      }
 
-    showSuccess('직급이 저장되었습니다.')
-    await loadUsers()
+      showSuccess('직급이 저장되었습니다.')
+      await loadUsers()
+    } finally {
+      setSavingUserId(null)
+    }
   }
 
   return (
@@ -123,8 +137,12 @@ export default function AdminUsersPage() {
                         </option>
                       ))}
                     </select>
-                    <button className="button" onClick={() => saveRole(user.id, user.role_code)}>
-                      직급 저장
+                    <button
+                      className="button"
+                      disabled={savingUserId === user.id}
+                      onClick={() => saveRole(user.id, user.role_code)}
+                    >
+                      {savingUserId === user.id ? '저장 중...' : '직급 저장'}
                     </button>
                   </div>
                 </div>
@@ -143,8 +161,8 @@ export default function AdminUsersPage() {
                 <input className="input" value={newRoleCode} onChange={(e) => setNewRoleCode(e.target.value)} />
               </div>
             </div>
-            <button className="button" style={{ marginTop: 12 }} onClick={addRole}>
-              직급 추가
+            <button className="button" style={{ marginTop: 12 }} disabled={addingRole} onClick={addRole}>
+              {addingRole ? '추가 중...' : '직급 추가'}
             </button>
           </div>
         </div>

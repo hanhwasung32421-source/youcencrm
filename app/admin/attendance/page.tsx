@@ -237,9 +237,9 @@ export default function AdminAttendancePage() {
                 ))}
               </select>
               <input className="input attendance-compact-date" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-              <button className="button danger attendance-mini-button" onClick={() => setAttendance('early_leave')}>조퇴</button>
-              <button className="button violet attendance-mini-button" onClick={() => setAttendance('vacation')}>휴가</button>
-              <button className="button secondary attendance-mini-button" onClick={() => setAttendance('checkout')}>퇴근</button>
+              <button className="button danger attendance-mini-button" disabled={saving} onClick={() => setAttendance('early_leave')}>조퇴</button>
+              <button className="button violet attendance-mini-button" disabled={saving} onClick={() => setAttendance('vacation')}>휴가</button>
+              <button className="button secondary attendance-mini-button" disabled={saving} onClick={() => setAttendance('checkout')}>퇴근</button>
             </div>
           </div>
         </div>
