@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
+import { PageLoading } from '@/components/page-loading'
+import { Toast, useToast } from '@/components/toast'
+import { BarChartCard } from '@/components/bar-chart-card'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { addDaysToYmd, getAttendancePeriodRange, getKstYmd } from '@/lib/attendance/time'
 
@@ -41,7 +44,8 @@ type SearchResponse = {
 export default function AdminDashboardPage() {
   const year = useMemo(() => new Date().getFullYear(), [])
   const [table, setTable] = useState<TableResponse | null>(null)
-  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+  const { toast, showError } = useToast()
 
   const [searchStart, setSearchStart] = useState(`${year}-01-01`)
   const [searchEnd, setSearchEnd] = useState(`${year}-12-31`)
@@ -58,27 +62,29 @@ export default function AdminDashboardPage() {
   }
 
   const loadTable = async () => {
-    setError('')
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session }
-    } = await supabase.auth.getSession()
-    if (!session?.access_token) return
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) return
 
-    const res = await fetch('/api/dashboard/admin', {
-      headers: { Authorization: `Bearer ${session.access_token}` }
-    })
-    const data = (await res.json().catch(() => ({}))) as TableResponse & { error?: string }
-    if (!res.ok || (data as any)?.error) {
-      setError((data as any)?.error || '대시보드 조회 실패')
-      return
+      const res = await fetch('/api/dashboard/admin', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      })
+      const data = (await res.json().catch(() => ({}))) as TableResponse & { error?: string }
+      if (!res.ok || (data as any)?.error) {
+        showError((data as any)?.error || '대시보드 조회 실패')
+        return
+      }
+      if ((data as any).mode !== 'table') return
+      setTable(data as TableResponse)
+    } finally {
+      setLoading(false)
     }
-    if ((data as any).mode !== 'table') return
-    setTable(data as TableResponse)
   }
 
   const search = async (override?: { start: string; end: string }) => {
-    setError('')
     const supabase = createSupabaseBrowserClient()
     const {
       data: { session }
@@ -96,7 +102,7 @@ export default function AdminDashboardPage() {
     })
     const data = (await res.json().catch(() => ({}))) as SearchResponse & { error?: string }
     if (!res.ok || (data as any)?.error) {
-      setError((data as any)?.error || '검색 실패')
+      showError((data as any)?.error || '검색 실패')
       return
     }
     if ((data as any).mode !== 'search') return
@@ -169,10 +175,34 @@ export default function AdminDashboardPage() {
     void loadTable()
   }, [])
 
+  const todayRankingByCount = useMemo(() => {
+    return (table?.rows || [])
+      .filter((row) => row.today.count > 0)
+      .sort((a, b) => b.today.count - a.today.count)
+      .slice(0, 8)
+      .map((row) => ({ label: row.name, value: row.today.count }))
+  }, [table])
+
+  const monthRankingByViews = useMemo(() => {
+    return (table?.rows || [])
+      .filter((row) => row.month.views > 0)
+      .sort((a, b) => b.month.views - a.month.views)
+      .slice(0, 8)
+      .map((row) => ({ label: row.name, value: row.month.views }))
+  }, [table])
+
   return (
     <AuthGuard requireAdmin>
       <AppShell title="관리자 대시보드" subtitle="직원별 업무 효율을 확인합니다.">
-        {error ? <div className="message-error small">{error}</div> : null}
+        {loading ? <PageLoading text="대시보드를 불러오는 중입니다..." /> : null}
+        <Toast toast={toast} />
+
+        {searchResult ? null : (
+          <div className="grid grid-2">
+            <BarChartCard title="오늘 업로드 순위" subtitle="오늘 등록한 영상 수 기준입니다." items={todayRankingByCount} tone="blue" />
+            <BarChartCard title="이번달 조회수 순위" subtitle="이번달 등록 영상의 누적 조회수 기준입니다." items={monthRankingByViews} tone="amber" />
+          </div>
+        )}
 
         <div className="panel">
           <div className="panel-header">

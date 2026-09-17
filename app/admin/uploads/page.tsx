@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
+import { PageLoading } from '@/components/page-loading'
+import { Toast, useToast } from '@/components/toast'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 
 type Item = {
@@ -27,7 +29,8 @@ function AdminUploadsPageInner() {
   const userId = searchParams.get('userId') || ''
 
   const [data, setData] = useState<ApiResponse | null>(null)
-  const [error, setError] = useState('')
+  const { toast, showError } = useToast()
+  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [sortKey, setSortKey] = useState<'uploaded_at' | 'title' | 'view_count'>('uploaded_at')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -46,28 +49,31 @@ function AdminUploadsPageInner() {
   }
 
   const load = async (nextPage = page, nextSortKey = sortKey, nextSortDir = sortDir) => {
-    setError('')
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session }
-    } = await supabase.auth.getSession()
-    if (!session?.access_token) return
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) return
 
-    const qs = new URLSearchParams({
-      userId,
-      page: String(nextPage),
-      sortKey: nextSortKey,
-      sortDir: nextSortDir
-    }).toString()
-    const res = await fetch(`/api/admin/videos/by-user?${qs}`, {
-      headers: { Authorization: `Bearer ${session.access_token}` }
-    })
-    const json = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      setError(json?.error || '업로드 내역 조회 실패')
-      return
+      const qs = new URLSearchParams({
+        userId,
+        page: String(nextPage),
+        sortKey: nextSortKey,
+        sortDir: nextSortDir
+      }).toString()
+      const res = await fetch(`/api/admin/videos/by-user?${qs}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        showError(json?.error || '업로드 내역 조회 실패')
+        return
+      }
+      setData(json as ApiResponse)
+    } finally {
+      setLoading(false)
     }
-    setData(json as ApiResponse)
   }
 
   useEffect(() => {
@@ -107,7 +113,8 @@ function AdminUploadsPageInner() {
   return (
     <AuthGuard requireAdmin>
       <AppShell title="업로드 내역" subtitle={data ? `${data.user.name} 님의 업로드 내역입니다.` : '업로드 내역을 불러옵니다.'}>
-        {error ? <div className="message-error small">{error}</div> : null}
+        {loading ? <PageLoading text="업로드 내역을 불러오는 중입니다..." /> : null}
+        <Toast toast={toast} />
 
         <div className="panel">
           <div className="panel-header">

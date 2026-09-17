@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { getKstYmd } from '@/lib/attendance/time'
 import { getDisplayVersion } from '@/lib/version/format'
+import { Toast, useToast } from '@/components/toast'
 
 type AttendanceStatus = 'not_started' | 'present' | 'late' | 'vacation' | 'early_leave' | 'review_needed'
 
@@ -19,7 +20,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
   const [checkOutAt, setCheckOutAt] = useState<string | null>(null)
   const [workedSeconds, setWorkedSeconds] = useState(0)
   const [checkoutAvailableAt, setCheckoutAvailableAt] = useState<number | null>(null)
-  const [toastMessage, setToastMessage] = useState('')
+  const { toast, showSuccess, showError } = useToast()
   const [todayYmd, setTodayYmd] = useState(getKstYmd(new Date()))
 
   const loadAttendanceStatus = async () => {
@@ -88,12 +89,6 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
   }, [checkoutAvailableAt])
 
   useEffect(() => {
-    if (!toastMessage) return
-    const timer = window.setTimeout(() => setToastMessage(''), 1800)
-    return () => window.clearTimeout(timer)
-  }, [toastMessage])
-
-  useEffect(() => {
     const timer = window.setInterval(() => {
       const nextYmd = getKstYmd(new Date())
       if (nextYmd !== todayYmd) {
@@ -133,7 +128,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        alert(data?.error || '출근 처리에 실패했습니다.')
+        showError(data?.error || '출근 처리에 실패했습니다.')
         return
       }
 
@@ -143,7 +138,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
       setCheckOutAt(null)
       setWorkedSeconds(0)
       setCheckoutAvailableAt(new Date(checkedInAt).getTime() + 5000)
-      setToastMessage('출근처리 되었습니다.')
+      showSuccess('출근처리 되었습니다.')
     } finally {
       setCheckingIn(false)
     }
@@ -164,14 +159,14 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        alert(data?.error || '퇴근 처리에 실패했습니다.')
+        showError(data?.error || '퇴근 처리에 실패했습니다.')
         return
       }
 
       setCheckOutAt(data.checkedOutAt || new Date().toISOString())
       setWorkedSeconds(Number(data.workedSeconds || workedSeconds))
       setCheckoutAvailableAt(null)
-      setToastMessage('퇴근처리 되었습니다.')
+      showSuccess('퇴근처리 되었습니다.')
     } finally {
       setCheckingOut(false)
     }
@@ -185,7 +180,7 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
   const showCheckoutButton = Boolean(checkInAt && !checkOutAt)
   return (
     <>
-      {toastMessage ? <div className="topbar-toast">{toastMessage}</div> : null}
+      <Toast toast={toast} />
       <div className="topbar-actions">
         {showCheckInButton ? (
           <button className="button success topbar-action-button" disabled={checkingIn} onClick={checkIn}>

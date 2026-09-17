@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
+import { PageLoading } from '@/components/page-loading'
+import { Toast, useToast } from '@/components/toast'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { MENU_DEFINITIONS } from '@/lib/menu/permissions'
 
@@ -17,29 +19,32 @@ export default function AdminMenuPermissionsPage() {
   const [roles, setRoles] = useState<RoleItem[]>([])
   const [items, setItems] = useState<Record<string, string[]>>({})
   const [menus, setMenus] = useState<MenuItem[]>([...MENU_DEFINITIONS])
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+  const { toast, showSuccess, showError } = useToast()
 
   const loadPermissions = async () => {
-    setError('')
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session }
-    } = await supabase.auth.getSession()
-    if (!session?.access_token) return
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) return
 
-    const res = await fetch('/api/admin/menu-permissions', {
-      headers: { Authorization: `Bearer ${session.access_token}` }
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      setError(data?.error || '메뉴 권한 조회 실패')
-      return
+      const res = await fetch('/api/admin/menu-permissions', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        showError(data?.error || '메뉴 권한 조회 실패')
+        return
+      }
+
+      setRoles(data.roles || [])
+      setMenus(data.menus || [...MENU_DEFINITIONS])
+      setItems(data.items || {})
+    } finally {
+      setLoading(false)
     }
-
-    setRoles(data.roles || [])
-    setMenus(data.menus || [...MENU_DEFINITIONS])
-    setItems(data.items || {})
   }
 
   useEffect(() => {
@@ -61,9 +66,6 @@ export default function AdminMenuPermissionsPage() {
   }
 
   const save = async () => {
-    setMessage('')
-    setError('')
-
     const supabase = createSupabaseBrowserClient()
     const {
       data: { session }
@@ -81,17 +83,19 @@ export default function AdminMenuPermissionsPage() {
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      setError(data?.error || '메뉴 권한 저장 실패')
+      showError(data?.error || '메뉴 권한 저장 실패')
       return
     }
 
-    setMessage('메뉴 권한이 저장되었습니다.')
+    showSuccess('메뉴 권한이 저장되었습니다.')
     await loadPermissions()
   }
 
   return (
     <AuthGuard requireAdmin>
       <AppShell title="메뉴 권한 관리" subtitle="총 관리자가 역할별로 볼 수 있는 메뉴를 직접 체크해서 저장합니다.">
+        {loading ? <PageLoading text="메뉴 권한을 불러오는 중입니다..." /> : null}
+        <Toast toast={toast} />
         <div className="grid grid-2">
           <div className="panel form-stack">
             <div className="panel-header">
@@ -132,8 +136,6 @@ export default function AdminMenuPermissionsPage() {
             <button className="button" onClick={save}>
               메뉴 권한 저장
             </button>
-            {message ? <div className="message-success small">{message}</div> : null}
-            {error ? <div className="message-error small">{error}</div> : null}
           </div>
 
           <div className="panel">

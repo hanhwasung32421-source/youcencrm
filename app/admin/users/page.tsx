@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
+import { PageLoading } from '@/components/page-loading'
+import { Toast, useToast } from '@/components/toast'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 
 type UserItem = {
@@ -25,36 +27,40 @@ export default function AdminUsersPage() {
   const [roles, setRoles] = useState<RoleItem[]>([])
   const [newRoleName, setNewRoleName] = useState('')
   const [newRoleCode, setNewRoleCode] = useState('')
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+  const { toast, showSuccess, showError } = useToast()
 
   const loadUsers = async () => {
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session }
-    } = await supabase.auth.getSession()
-    if (!session?.access_token) return
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) return
 
-    const [usersRes, rolesRes] = await Promise.all([
-      fetch('/api/admin/users', {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      }),
-      fetch('/api/admin/roles', {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      })
-    ])
-    const data = await usersRes.json()
-    const rolesData = await rolesRes.json().catch(() => ({}))
-    if (!usersRes.ok) {
-      setError(data?.error || '직원 목록 조회 실패')
-      return
+      const [usersRes, rolesRes] = await Promise.all([
+        fetch('/api/admin/users', {
+          headers: { Authorization: `Bearer ${session.access_token}` }
+        }),
+        fetch('/api/admin/roles', {
+          headers: { Authorization: `Bearer ${session.access_token}` }
+        })
+      ])
+      const data = await usersRes.json()
+      const rolesData = await rolesRes.json().catch(() => ({}))
+      if (!usersRes.ok) {
+        showError(data?.error || '직원 목록 조회 실패')
+        return
+      }
+      if (!rolesRes.ok) {
+        showError(rolesData?.error || '직급 목록 조회 실패')
+        return
+      }
+      setItems(data.items || [])
+      setRoles(rolesData.items || [])
+    } finally {
+      setLoading(false)
     }
-    if (!rolesRes.ok) {
-      setError(rolesData?.error || '직급 목록 조회 실패')
-      return
-    }
-    setItems(data.items || [])
-    setRoles(rolesData.items || [])
   }
 
   useEffect(() => {
@@ -62,9 +68,6 @@ export default function AdminUsersPage() {
   }, [])
 
   const addRole = async () => {
-    setMessage('')
-    setError('')
-
     const supabase = createSupabaseBrowserClient()
     const {
       data: { session }
@@ -85,20 +88,17 @@ export default function AdminUsersPage() {
     })
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      setError(data?.error || '직급 추가 실패')
+      showError(data?.error || '직급 추가 실패')
       return
     }
 
     setNewRoleName('')
     setNewRoleCode('')
-    setMessage('직급이 추가되었습니다. 기본 메뉴 권한은 없습니다.')
+    showSuccess('직급이 추가되었습니다. 기본 메뉴 권한은 없습니다.')
     await loadUsers()
   }
 
   const saveRole = async (userId: string, roleType: string) => {
-    setMessage('')
-    setError('')
-
     const supabase = createSupabaseBrowserClient()
     const {
       data: { session }
@@ -117,17 +117,19 @@ export default function AdminUsersPage() {
 
     const data = await res.json()
     if (!res.ok) {
-      setError(data?.error || '직급 저장 실패')
+      showError(data?.error || '직급 저장 실패')
       return
     }
 
-    setMessage('직급이 저장되었습니다.')
+    showSuccess('직급이 저장되었습니다.')
     await loadUsers()
   }
 
   return (
     <AuthGuard requireAdmin>
       <AppShell title="직원 직급 관리" subtitle="총 관리자와 관리자는 하위 직원의 직급을 변경할 수 있습니다.">
+        {loading ? <PageLoading text="직원 목록을 불러오는 중입니다..." /> : null}
+        <Toast toast={toast} />
         <div className="panel">
           <div className="panel-header">
             <div>
@@ -188,8 +190,6 @@ export default function AdminUsersPage() {
               직급 추가
             </button>
           </div>
-          {message ? <div className="message-success small" style={{ marginTop: 16 }}>{message}</div> : null}
-          {error ? <div className="message-error small" style={{ marginTop: 16 }}>{error}</div> : null}
         </div>
       </AppShell>
     </AuthGuard>

@@ -26,6 +26,11 @@ export function AppShell({
   const router = useRouter()
   const pathname = usePathname()
   const [me, setMe] = useState<Me | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [pathname])
 
   useEffect(() => {
     const run = async () => {
@@ -66,7 +71,7 @@ export function AppShell({
 
   return (
     <div className="workspace">
-      <aside className="sidebar">
+      <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-section">
           <div className="sidebar-caption">workspace</div>
           <div className="sidebar-nav">
@@ -75,6 +80,7 @@ export function AppShell({
                 key={item.href}
                 className={`sidebar-link ${pathname === item.href ? 'active' : ''}`}
                 href={item.href}
+                onClick={() => setSidebarOpen(false)}
               >
                 <span>{item.label}</span>
               </Link>
@@ -101,6 +107,9 @@ export function AppShell({
       </aside>
 
       <section className="content-area">
+        <button className="button secondary sidebar-toggle" onClick={() => setSidebarOpen((prev) => !prev)}>
+          {sidebarOpen ? '메뉴 닫기' : '메뉴 열기'}
+        </button>
         <div className="document-head">
           <div className="document-head-top">
             <div>

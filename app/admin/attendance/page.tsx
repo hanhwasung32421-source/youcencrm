@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
+import { PageLoading } from '@/components/page-loading'
+import { Toast, useToast } from '@/components/toast'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { formatWorkedHms } from '@/lib/attendance/time'
 
@@ -48,31 +50,35 @@ export default function AdminAttendancePage() {
   const [monthDays, setMonthDays] = useState<number[]>([])
   const [selectedUserId, setSelectedUserId] = useState('')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
+  const { toast, showSuccess, showError } = useToast()
   const [saving, setSaving] = useState(false)
 
   const loadData = async () => {
-    const supabase = createSupabaseBrowserClient()
-    const {
-      data: { session }
-    } = await supabase.auth.getSession()
-    if (!session?.access_token) return
+    try {
+      const supabase = createSupabaseBrowserClient()
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) return
 
-    const res = await fetch(`/api/admin/attendance?period=${period}`, {
-      headers: { Authorization: `Bearer ${session.access_token}` }
-    })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      setError(data?.error || '근태 조회 실패')
-      return
-    }
-    setUsers(data.users || [])
-    setRows(data.rows || [])
-    setWeekDays(data.weekDays || [])
-    setMonthDays(data.monthDays || [])
-    if (!selectedUserId && data.users?.[0]?.id) {
-      setSelectedUserId(data.users[0].id)
+      const res = await fetch(`/api/admin/attendance?period=${period}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        showError(data?.error || '근태 조회 실패')
+        return
+      }
+      setUsers(data.users || [])
+      setRows(data.rows || [])
+      setWeekDays(data.weekDays || [])
+      setMonthDays(data.monthDays || [])
+      if (!selectedUserId && data.users?.[0]?.id) {
+        setSelectedUserId(data.users[0].id)
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -81,15 +87,17 @@ export default function AdminAttendancePage() {
   }, [period])
 
   const setAttendance = async (attendanceStatus: 'vacation' | 'early_leave' | 'checkout') => {
-    setMessage('')
-    setError('')
+    if (!selectedUserId) {
+      showError('직원을 먼저 선택해 주세요.')
+      return
+    }
     setSaving(true)
     try {
       const supabase = createSupabaseBrowserClient()
       const {
         data: { session }
       } = await supabase.auth.getSession()
-      if (!session?.access_token || !selectedUserId) return
+      if (!session?.access_token) return
 
       const res = await fetch('/api/admin/attendance/set', {
         method: 'POST',
@@ -103,10 +111,10 @@ export default function AdminAttendancePage() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data?.error || '근태 등록 실패')
+        showError(data?.error || '근태 등록 실패')
         return
       }
-      setMessage('근태가 반영되었습니다.')
+      showSuccess('근태가 반영되었습니다.')
       await loadData()
     } finally {
       setSaving(false)
@@ -125,14 +133,9 @@ export default function AdminAttendancePage() {
   return (
     <AuthGuard requireAdmin>
       <AppShell title="근태 관리" subtitle="일별, 주별, 월별로 직원 근태를 빠르게 확인하고 필요한 값만 수정합니다.">
-        {saving ? (
-          <div className="loading-overlay">
-            <div className="loading-modal">
-              <div className="loading-spinner" />
-              <div className="loading-text">근태 적용중입니다...</div>
-            </div>
-          </div>
-        ) : null}
+        {loading ? <PageLoading text="근태 정보를 불러오는 중입니다..." /> : null}
+        {saving ? <PageLoading text="근태 적용중입니다..." /> : null}
+        <Toast toast={toast} />
 
         <div className="toolbar">
           <button className={`button ${period === 'day' ? '' : 'secondary'}`} onClick={() => setPeriod('day')}>일별</button>
@@ -254,9 +257,6 @@ export default function AdminAttendancePage() {
               <button className="button secondary attendance-mini-button" onClick={() => setAttendance('checkout')}>퇴근</button>
             </div>
           </div>
-
-          {message ? <div className="message-success small">{message}</div> : null}
-          {error ? <div className="message-error small">{error}</div> : null}
         </div>
       </AppShell>
     </AuthGuard>

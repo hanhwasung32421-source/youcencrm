@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
+import { PageLoading } from '@/components/page-loading'
+import { Toast, useToast } from '@/components/toast'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 
 type VideoItem = {
@@ -22,8 +24,8 @@ export default function CreatorVideosPage() {
   const [contentType, setContentType] = useState<'longform' | 'shortform'>('longform')
   const [stockName, setStockName] = useState('')
   const [contentCategory, setContentCategory] = useState('')
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
+  const { toast, showSuccess, showError } = useToast()
+  const [initialLoading, setInitialLoading] = useState(true)
   const [loading, setLoading] = useState(false)
 
   const getAccessToken = async () => {
@@ -42,19 +44,17 @@ export default function CreatorVideosPage() {
     })
     const data = await res.json()
     if (!res.ok) {
-      setError(data?.error || '영상 목록 조회 실패')
+      showError(data?.error || '영상 목록 조회 실패')
       return
     }
     setItems(data.items || [])
   }
 
   useEffect(() => {
-    void loadMyVideos()
+    void loadMyVideos().finally(() => setInitialLoading(false))
   }, [])
 
   const submit = async () => {
-    setError('')
-    setMessage('')
     setLoading(true)
     try {
       const accessToken = await getAccessToken()
@@ -71,11 +71,11 @@ export default function CreatorVideosPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data?.error || '영상 저장 실패')
+        showError(data?.error || '영상 저장 실패')
         return
       }
 
-      setMessage('영상이 CRM에 저장되었습니다. 업로드 날짜와 기본 통계도 자동 반영되었습니다.')
+      showSuccess('영상이 CRM에 저장되었습니다. 업로드 날짜와 기본 통계도 자동 반영되었습니다.')
       setYoutubeUrl('')
       setContentType('longform')
       setStockName('')
@@ -89,14 +89,9 @@ export default function CreatorVideosPage() {
   return (
     <AuthGuard>
       <AppShell title="영상 등록" subtitle="업로드 완료 후 URL과 기본 분류만 입력하면 업로드 시각과 통계가 자동 저장됩니다.">
-        {loading ? (
-          <div className="loading-overlay">
-            <div className="loading-modal">
-              <div className="loading-spinner" />
-              <div className="loading-text">업로드중입니다...</div>
-            </div>
-          </div>
-        ) : null}
+        {initialLoading ? <PageLoading text="영상 목록을 불러오는 중입니다..." /> : null}
+        {loading ? <PageLoading text="업로드중입니다..." /> : null}
+        <Toast toast={toast} />
         <div className="grid grid-2">
           <div className="panel form-stack">
             <div className="panel-header">
@@ -131,8 +126,6 @@ export default function CreatorVideosPage() {
               <input className="input" value={contentCategory} onChange={(e) => setContentCategory(e.target.value)} />
             </div>
             <button className="button" disabled={loading} onClick={submit}>작성 버튼</button>
-            {message ? <div className="message-success small">{message}</div> : null}
-            {error ? <div className="message-error small">{error}</div> : null}
           </div>
 
           <div className="panel">

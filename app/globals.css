@@ -70,8 +70,9 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 12px 24px;
   min-height: 68px;
+  flex-wrap: wrap;
 }
 
 .brand-wrap {
@@ -143,7 +144,8 @@ textarea {
   box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.15) inset;
 }
 
-.topbar-toast {
+.topbar-toast,
+.app-toast {
   position: fixed;
   top: 78px;
   left: 50%;
@@ -151,11 +153,20 @@ textarea {
   z-index: 120;
   padding: 12px 18px;
   border-radius: 999px;
-  background: rgba(16, 185, 129, 0.95);
   color: #ffffff;
   font-size: 13px;
   font-weight: 700;
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+  white-space: nowrap;
+}
+
+.topbar-toast,
+.app-toast.success {
+  background: rgba(16, 185, 129, 0.95);
+}
+
+.app-toast.error {
+  background: rgba(239, 68, 68, 0.95);
 }
 
 .page {
@@ -175,6 +186,10 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+.sidebar-toggle {
+  display: none;
 }
 
 .sidebar-section {
@@ -233,6 +248,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
 }
 
 .document-head {
@@ -283,6 +299,7 @@ textarea {
   border-radius: 18px;
   padding: 20px;
   box-shadow: var(--shadow);
+  min-width: 0;
 }
 
 .panel.soft {
@@ -765,7 +782,8 @@ textarea {
 .data-table {
   border: 1px solid var(--line);
   border-radius: 14px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: #10192c;
 }
 
@@ -776,6 +794,7 @@ textarea {
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
+  min-width: 640px;
 }
 
 .data-table-header {
@@ -875,7 +894,13 @@ textarea {
 .attendance-month-board {
   border: 1px solid var(--line);
   border-radius: 14px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.attendance-month-header,
+.attendance-month-row {
+  min-width: 700px;
 }
 
 .attendance-month-header,
@@ -992,6 +1017,15 @@ textarea {
 
   .sidebar {
     position: static;
+    display: none;
+  }
+
+  .sidebar.sidebar-open {
+    display: flex;
+  }
+
+  .sidebar-toggle {
+    display: inline-flex;
   }
 
   .hero-grid,
@@ -1014,5 +1048,16 @@ textarea {
 
   .topbar-inner {
     min-height: 62px;
+  }
+
+  .attendance-register-row {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .attendance-compact-select,
+  .attendance-compact-date {
+    max-width: none;
+    flex: 1 1 160px;
   }
 }
