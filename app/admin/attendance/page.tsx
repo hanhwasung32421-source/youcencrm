@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
-import { formatWorkedHms } from '@/lib/attendance'
+import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { formatWorkedHms } from '@/lib/attendance/time'
 
 type UserItem = {
   id: string

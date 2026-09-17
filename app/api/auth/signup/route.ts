@@ -2,8 +2,9 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { sha256 } from '@/lib/crypto'
-import { createSupabaseAdminClient } from '@/lib/supabase-admin'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin-client'
 import { SIGNUP_CHALLENGE_SECRET } from '@/lib/app-config'
+import { TABLES } from '@/lib/supabase/tables'
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
     }
 
     const { data: existingLoginId } = await supabaseAdmin
-      .from('crm_users')
+      .from(TABLES.crmUsers)
       .select('id, auth_user_id')
       .eq('login_id', body.loginId)
       .maybeSingle()
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: createAuthError?.message || '회원가입에 실패했습니다.' }, { status: 400 })
     }
 
-    const { error: profileError } = await supabaseAdmin.from('crm_users').insert({
+    const { error: profileError } = await supabaseAdmin.from(TABLES.crmUsers).insert({
       auth_user_id: created.user.id,
       email: body.email,
       name: body.name,

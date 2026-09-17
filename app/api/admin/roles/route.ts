@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireAdmin } from '@/lib/auth'
-import { BUILTIN_ROLE_TYPES } from '@/lib/menu-permissions'
+import { requireAdmin } from '@/lib/auth/session'
+import { BUILTIN_ROLE_TYPES } from '@/lib/menu/permissions'
+import { TABLES } from '@/lib/supabase/tables'
 
 const createRoleSchema = z.object({
   accessToken: z.string().min(10),
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization') || ''
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
     const { supabaseAdmin } = await requireAdmin(token)
-    const { data, error } = await supabaseAdmin.from('roles').select('code, name').order('created_at', { ascending: true })
+    const { data, error } = await supabaseAdmin.from(TABLES.roles).select('code, name').order('created_at', { ascending: true })
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await supabaseAdmin
-      .from('roles')
+      .from(TABLES.roles)
       .insert({
         code,
         name: body.name.trim()

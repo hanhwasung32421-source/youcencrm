@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin } from '@/lib/auth/session'
+import { TABLES } from '@/lib/supabase/tables'
 
 export async function GET(request: Request) {
   try {
@@ -8,7 +9,7 @@ export async function GET(request: Request) {
     const { supabaseAdmin } = await requireAdmin(token)
 
     const { data, error } = await supabaseAdmin
-      .from('crm_users')
+      .from(TABLES.crmUsers)
       .select('id, name, email, role_type, custom_role_code, employment_status, joined_at')
       .order('joined_at', { ascending: false })
 
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    const { data: roles } = await supabaseAdmin.from('roles').select('code, name')
+    const { data: roles } = await supabaseAdmin.from(TABLES.roles).select('code, name')
     const roleNameMap = Object.fromEntries((roles || []).map((role) => [role.code, role.name]))
 
     return NextResponse.json({

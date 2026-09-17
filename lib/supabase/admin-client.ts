@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL } from '@/lib/supabase-config'
+import { SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL } from '@/lib/supabase/config'
 
 export function createSupabaseAdminClient() {
   const url = SUPABASE_URL

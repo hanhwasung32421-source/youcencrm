@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/auth'
-import { getAutoCheckoutIso } from '@/lib/attendance'
+import { requireAdmin } from '@/lib/auth/session'
+import { getAutoCheckoutIso } from '@/lib/attendance/time'
+import { TABLES } from '@/lib/supabase/tables'
 
 function isValidYmd(value: string | null) {
   return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
@@ -83,7 +84,7 @@ export async function GET(request: Request) {
       const startIso = kstDayStartUtcIso(searchStart!)
       const endIso = kstDayEndUtcIso(searchEnd!)
       const { data: users, error: usersError } = await supabaseAdmin
-        .from('crm_users')
+        .from(TABLES.crmUsers)
         .select('id, name, employment_status')
         .neq('employment_status', 'inactive')
         .order('name', { ascending: true })
@@ -93,7 +94,7 @@ export async function GET(request: Request) {
       }
 
       const { data: videos, error } = await supabaseAdmin
-        .from('videos')
+        .from(TABLES.videos)
         .select('primary_owner_user_id, duration_seconds, view_count')
         .gte('created_at', startIso)
         .lte('created_at', endIso)
@@ -138,7 +139,7 @@ export async function GET(request: Request) {
     const yearEndIso = kstDayEndUtcIso(yearEnd)
 
     const { data: users, error: usersError } = await supabaseAdmin
-      .from('crm_users')
+      .from(TABLES.crmUsers)
       .select('id, name, employment_status')
       .neq('employment_status', 'inactive')
       .order('name', { ascending: true })
@@ -148,7 +149,7 @@ export async function GET(request: Request) {
     }
 
     const { data: yearVideos, error: videosError } = await supabaseAdmin
-      .from('videos')
+      .from(TABLES.videos)
       .select('primary_owner_user_id, created_at, duration_seconds, view_count')
       .gte('created_at', yearStartIso)
       .lte('created_at', yearEndIso)
@@ -196,7 +197,7 @@ export async function GET(request: Request) {
     }
 
     const { data: attendanceDays } = await supabaseAdmin
-      .from('attendance_days')
+      .from(TABLES.attendanceDays)
       .select('user_id, work_date, check_in_at, check_out_at')
       .gte('work_date', yearStart)
       .lte('work_date', yearEnd)

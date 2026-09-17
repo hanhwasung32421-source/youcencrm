@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
-import { addDaysToYmd, getAttendancePeriodRange, getKstYmd } from '@/lib/attendance'
+import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { addDaysToYmd, getAttendancePeriodRange, getKstYmd } from '@/lib/attendance/time'
 
 type Bucket = { count: number; durationSeconds: number; views: number; afterCheckInCount?: number; afterCheckOutCount?: number }
 type Row = {

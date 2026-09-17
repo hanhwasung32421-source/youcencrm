@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getProfileByAccessToken } from '@/lib/auth'
+import { getProfileByAccessToken } from '@/lib/auth/session'
+import { TABLES } from '@/lib/supabase/tables'
 
 export async function GET(request: Request) {
   try {
@@ -11,13 +12,13 @@ export async function GET(request: Request) {
     const dayStart = `${today}T00:00:00.000Z`
 
     const { count } = await supabaseAdmin
-      .from('videos')
+      .from(TABLES.videos)
       .select('*', { count: 'exact', head: true })
       .eq('primary_owner_user_id', profile.id)
       .gte('created_at', dayStart)
 
     const { data: latest } = await supabaseAdmin
-      .from('videos')
+      .from(TABLES.videos)
       .select('id, title, stock_name, content_type, view_count, published_at, created_at, duration_seconds, youtube_url')
       .eq('primary_owner_user_id', profile.id)
       .order('created_at', { ascending: false })
@@ -28,20 +29,20 @@ export async function GET(request: Request) {
     const sinceIso = since.toISOString()
 
     const { data: chartRows } = await supabaseAdmin
-      .from('videos')
+      .from(TABLES.videos)
       .select('id, title, content_type, view_count, duration_seconds, created_at')
       .eq('primary_owner_user_id', profile.id)
       .gte('created_at', sinceIso)
       .order('created_at', { ascending: true })
 
     const { count: longformCount } = await supabaseAdmin
-      .from('videos')
+      .from(TABLES.videos)
       .select('*', { count: 'exact', head: true })
       .eq('primary_owner_user_id', profile.id)
       .eq('content_type', 'longform')
 
     const { count: shortformCount } = await supabaseAdmin
-      .from('videos')
+      .from(TABLES.videos)
       .select('*', { count: 'exact', head: true })
       .eq('primary_owner_user_id', profile.id)
       .eq('content_type', 'shortform')

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase-config'
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase/config'
 
 let browserClient: ReturnType<typeof createClient> | null = null
 

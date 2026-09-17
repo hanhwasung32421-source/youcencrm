@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
 import { BarChartCard } from '@/components/bar-chart-card'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 
 type Stats = {
   todayRegisteredCount: number

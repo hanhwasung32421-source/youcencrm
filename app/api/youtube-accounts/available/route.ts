@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getProfileByAccessToken } from '@/lib/auth'
-import { ensureDefaultYoutubeAccount } from '@/lib/default-youtube-account'
+import { getProfileByAccessToken } from '@/lib/auth/session'
+import { ensureDefaultYoutubeAccount } from '@/lib/youtube/default-account'
 
 export async function GET(request: Request) {
   try {

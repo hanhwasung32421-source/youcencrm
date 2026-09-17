@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
-import { MENU_DEFINITIONS } from '@/lib/menu-permissions'
+import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { MENU_DEFINITIONS } from '@/lib/menu/permissions'
 
 type MenuItem = (typeof MENU_DEFINITIONS)[number]
 type RoleItem = {

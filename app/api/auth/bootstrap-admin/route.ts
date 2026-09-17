@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createSupabaseAdminClient } from '@/lib/supabase-admin'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin-client'
+import { TABLES } from '@/lib/supabase/tables'
 
 const ADMIN_LOGIN_ID = 'admin'
 const ADMIN_EMAIL = 'admin@youcencrm.local'
@@ -53,13 +54,13 @@ export async function POST() {
     }
 
     const { data: profile } = await supabaseAdmin
-      .from('crm_users')
+      .from(TABLES.crmUsers)
       .select('id')
       .eq('auth_user_id', adminUser.id)
       .maybeSingle()
 
     if (!profile) {
-      const { error: insertProfileError } = await supabaseAdmin.from('crm_users').insert({
+      const { error: insertProfileError } = await supabaseAdmin.from(TABLES.crmUsers).insert({
         auth_user_id: adminUser.id,
         email: ADMIN_EMAIL,
         name: 'admin',
@@ -72,7 +73,7 @@ export async function POST() {
       }
     } else {
       const { error: updateProfileError } = await supabaseAdmin
-        .from('crm_users')
+        .from(TABLES.crmUsers)
         .update({
           email: ADMIN_EMAIL,
           name: 'admin',

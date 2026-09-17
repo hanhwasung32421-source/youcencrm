@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { getProfileByAccessToken } from '@/lib/auth'
-import { getKstYmd, isLateCheckIn } from '@/lib/attendance'
+import { getProfileByAccessToken } from '@/lib/auth/session'
+import { getKstYmd, isLateCheckIn } from '@/lib/attendance/time'
+import { TABLES } from '@/lib/supabase/tables'
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
     const nowIso = new Date().toISOString()
 
     const { data: existingDay } = await supabaseAdmin
-      .from('attendance_days')
+      .from(TABLES.attendanceDays)
       .select('id, attendance_status, check_in_at, check_out_at')
       .eq('user_id', profile.id)
       .eq('work_date', today)
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     if (existingDay?.id) {
       const nextStatus = isLateCheckIn(nowIso, today) ? 'late' : existingDay.attendance_status === 'late' ? 'late' : 'present'
       const { error: updateError } = await supabaseAdmin
-        .from('attendance_days')
+        .from(TABLES.attendanceDays)
         .update({
           attendance_status: nextStatus,
           check_in_at: nowIso,
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: updateError.message }, { status: 500 })
       }
 
-      await supabaseAdmin.from('attendance_events').insert({
+      await supabaseAdmin.from(TABLES.attendanceEvents).insert({
         attendance_day_id: existingDay.id,
         event_type: nextStatus,
         occurred_at: nowIso,
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
         note: '본인 출근 등록'
       })
 
-      await supabaseAdmin.from('audit_logs').insert({
+      await supabaseAdmin.from(TABLES.auditLogs).insert({
         actor_user_id: profile.id,
         action_type: 'check_in',
         target_type: 'attendance_day',
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     const { data: createdDay, error: createError } = await supabaseAdmin
-      .from('attendance_days')
+      .from(TABLES.attendanceDays)
       .insert({
         user_id: profile.id,
         work_date: today,
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: createError?.message || '출근 등록 실패' }, { status: 500 })
     }
 
-    await supabaseAdmin.from('attendance_events').insert({
+    await supabaseAdmin.from(TABLES.attendanceEvents).insert({
       attendance_day_id: createdDay.id,
       event_type: isLateCheckIn(nowIso, today) ? 'late' : 'present',
       occurred_at: nowIso,
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
       note: '본인 출근 등록'
     })
 
-    await supabaseAdmin.from('audit_logs').insert({
+    await supabaseAdmin.from(TABLES.auditLogs).insert({
       actor_user_id: profile.id,
       action_type: 'check_in',
       target_type: 'attendance_day',

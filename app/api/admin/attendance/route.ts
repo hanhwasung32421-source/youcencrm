@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/auth'
-import { getAttendanceDisplayStatus, getAttendancePeriodRange, getAttendanceWorkedSeconds, getMonthDayNumbers, getWeekdayLabel, getYmdList } from '@/lib/attendance'
+import { requireAdmin } from '@/lib/auth/session'
+import { getAttendanceDisplayStatus, getAttendancePeriodRange, getAttendanceWorkedSeconds, getMonthDayNumbers, getWeekdayLabel, getYmdList } from '@/lib/attendance/time'
+import { TABLES } from '@/lib/supabase/tables'
 
 export async function GET(request: Request) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
     const { startYmd, endYmd } = getAttendancePeriodRange(period)
 
     const { data: users, error: userError } = await supabaseAdmin
-      .from('crm_users')
+      .from(TABLES.crmUsers)
       .select('id, name, role_type, employment_status')
       .neq('employment_status', 'inactive')
       .order('name', { ascending: true })
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
     }
 
     const { data: days, error: daysError } = await supabaseAdmin
-      .from('attendance_days')
+      .from(TABLES.attendanceDays)
       .select('id, user_id, work_date, attendance_status, check_in_at, check_out_at, worked_minutes')
       .gte('work_date', startYmd)
       .lte('work_date', endYmd)

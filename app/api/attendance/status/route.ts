@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { getProfileByAccessToken } from '@/lib/auth'
-import { getAttendanceWorkedSeconds, getAutoCheckoutIso, getKstYmd } from '@/lib/attendance'
+import { getProfileByAccessToken } from '@/lib/auth/session'
+import { getAttendanceWorkedSeconds, getAutoCheckoutIso, getKstYmd } from '@/lib/attendance/time'
+import { TABLES } from '@/lib/supabase/tables'
 
 export async function GET(request: Request) {
   try {
@@ -10,7 +11,7 @@ export async function GET(request: Request) {
     const today = getKstYmd(new Date())
 
     const { data: day, error } = await supabaseAdmin
-      .from('attendance_days')
+      .from(TABLES.attendanceDays)
       .select('id, work_date, attendance_status, check_in_at, check_out_at, worked_minutes')
       .eq('user_id', profile.id)
       .eq('work_date', today)
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
       if (new Date() >= new Date(autoCheckoutAt)) {
         const workedSeconds = getAttendanceWorkedSeconds(day.check_in_at, autoCheckoutAt)
         await supabaseAdmin
-          .from('attendance_days')
+          .from(TABLES.attendanceDays)
           .update({
             check_out_at: autoCheckoutAt,
             worked_minutes: Math.floor(workedSeconds / 60),
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
           })
           .eq('id', day.id)
 
-        await supabaseAdmin.from('attendance_events').insert({
+        await supabaseAdmin.from(TABLES.attendanceEvents).insert({
           attendance_day_id: day.id,
           event_type: 'correction',
           occurred_at: autoCheckoutAt,
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
           note: '23:59 자동 퇴근 처리'
         })
 
-        await supabaseAdmin.from('audit_logs').insert({
+        await supabaseAdmin.from(TABLES.auditLogs).insert({
           actor_user_id: profile.id,
           action_type: 'auto_check_out',
           target_type: 'attendance_day',

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { getProfileByAccessToken } from '@/lib/auth'
-import { getAllowedMenuKeysForRole } from '@/lib/menu-permissions'
+import { getProfileByAccessToken } from '@/lib/auth/session'
+import { getAllowedMenuKeysForRole } from '@/lib/menu/permissions'
+import { TABLES } from '@/lib/supabase/tables'
 
 export async function GET(request: Request) {
   try {
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
     const effectiveRoleCode = profile.custom_role_code || profile.role_type
     const allowedMenuKeys = await getAllowedMenuKeysForRole(supabaseAdmin, effectiveRoleCode)
     const { data: roleRow } = await supabaseAdmin
-      .from('roles')
+      .from(TABLES.roles)
       .select('name')
       .eq('code', effectiveRoleCode)
       .maybeSingle()

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createSupabaseAdminClient } from '@/lib/supabase-admin'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin-client'
 
 const bodySchema = z.object({
   email: z.string().email()

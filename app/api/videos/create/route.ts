@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getProfileByAccessToken } from '@/lib/auth'
-import { extractYoutubeVideoId, fetchYoutubeVideoMeta } from '@/lib/youtube'
-import { ensureDefaultYoutubeAccount } from '@/lib/default-youtube-account'
+import { getProfileByAccessToken } from '@/lib/auth/session'
+import { extractYoutubeVideoId, fetchYoutubeVideoMeta } from '@/lib/youtube/api'
+import { ensureDefaultYoutubeAccount } from '@/lib/youtube/default-account'
+import { TABLES } from '@/lib/supabase/tables'
 
 const bodySchema = z.object({
   accessToken: z.string().min(10),
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
 
     let channelId: string | null = null
     const { data: existingChannel } = await supabaseAdmin
-      .from('channels')
+      .from(TABLES.channels)
       .select('id')
       .eq('youtube_channel_id', meta.youtubeChannelId)
       .maybeSingle()
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
       channelId = existingChannel.id
     } else {
       const { data: newChannel, error: channelInsertError } = await supabaseAdmin
-        .from('channels')
+        .from(TABLES.channels)
         .insert({
           youtube_channel_id: meta.youtubeChannelId,
           name: meta.channelName || `채널-${meta.youtubeChannelId.slice(0, 8)}`,
@@ -102,7 +103,7 @@ export async function POST(request: Request) {
     }
 
     const { data: insertedVideo, error: upsertError } = await supabaseAdmin
-      .from('videos')
+      .from(TABLES.videos)
       .upsert(
         {
           youtube_video_id: meta.youtubeVideoId,
@@ -135,7 +136,7 @@ export async function POST(request: Request) {
     }
 
     if (apiActive) {
-      await supabaseAdmin.from('video_snapshots').insert({
+      await supabaseAdmin.from(TABLES.videoSnapshots).insert({
         video_id: insertedVideo.id,
         snapshot_at: new Date().toISOString(),
         view_count: meta.viewCount,
@@ -146,7 +147,7 @@ export async function POST(request: Request) {
       })
     }
 
-    await supabaseAdmin.from('work_activity_events').insert({
+    await supabaseAdmin.from(TABLES.workActivityEvents).insert({
       user_id: profile.id,
       activity_type: 'video_registered',
       related_channel_id: channelId,

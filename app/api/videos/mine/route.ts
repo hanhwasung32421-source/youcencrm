@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getProfileByAccessToken } from '@/lib/auth'
+import { getProfileByAccessToken } from '@/lib/auth/session'
+import { TABLES } from '@/lib/supabase/tables'
 
 export async function GET(request: Request) {
   try {
@@ -8,7 +9,7 @@ export async function GET(request: Request) {
     const { profile, supabaseAdmin } = await getProfileByAccessToken(token)
 
     let query = supabaseAdmin
-      .from('videos')
+      .from(TABLES.videos)
       .select('id, title, stock_name, content_type, published_at, view_count, like_count, comment_count, youtube_url, created_at, youtube_account_id')
       .order('created_at', { ascending: false })
       .limit(20)

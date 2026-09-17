@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getProfileByAccessToken } from '@/lib/auth'
+import { getProfileByAccessToken } from '@/lib/auth/session'
+import { TABLES } from '@/lib/supabase/tables'
 
 const bodySchema = z.object({
   accessToken: z.string().min(10)
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
     const ip = forwarded.split(',')[0]?.trim() || null
     const userAgent = request.headers.get('user-agent') || null
 
-    const { error } = await supabaseAdmin.from('login_events').insert({
+    const { error } = await supabaseAdmin.from(TABLES.loginEvents).insert({
       user_id: profile.id,
       ip_address: ip,
       user_agent: userAgent,

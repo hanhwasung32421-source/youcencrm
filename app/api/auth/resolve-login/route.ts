@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createSupabaseAdminClient } from '@/lib/supabase-admin'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin-client'
+import { TABLES } from '@/lib/supabase/tables'
 
 const bodySchema = z.object({
   loginId: z.string().min(1)
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
     const supabaseAdmin = createSupabaseAdminClient()
 
     const { data, error } = await supabaseAdmin
-      .from('crm_users')
+      .from(TABLES.crmUsers)
       .select('email')
       .eq('login_id', body.loginId)
       .maybeSingle()

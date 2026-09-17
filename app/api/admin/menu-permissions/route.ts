@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireAdmin } from '@/lib/auth'
-import {
-  MENU_DEFINITIONS,
-  loadRoleMenuMap
-} from '@/lib/menu-permissions'
+import { requireAdmin } from '@/lib/auth/session'
+import { MENU_DEFINITIONS, loadRoleMenuMap } from '@/lib/menu/permissions'
+import { TABLES } from '@/lib/supabase/tables'
 
 const bodySchema = z.object({
   accessToken: z.string().min(10),
@@ -23,7 +21,7 @@ export async function GET(request: Request) {
     }
 
     const roleMenuMap = await loadRoleMenuMap(supabaseAdmin)
-    const { data: roles } = await supabaseAdmin.from('roles').select('code, name').order('created_at', { ascending: true })
+    const { data: roles } = await supabaseAdmin.from(TABLES.roles).select('code, name').order('created_at', { ascending: true })
     return NextResponse.json({
       roles: roles || [],
       menus: MENU_DEFINITIONS,
@@ -43,7 +41,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '총 관리자만 메뉴 권한을 저장할 수 있습니다.' }, { status: 403 })
     }
 
-    const { data: roleRow } = await supabaseAdmin.from('roles').select('code').eq('code', body.roleType).maybeSingle()
+    const { data: roleRow } = await supabaseAdmin.from(TABLES.roles).select('code').eq('code', body.roleType).maybeSingle()
     if (!roleRow) {
       return NextResponse.json({ error: '유효하지 않은 역할입니다.' }, { status: 400 })
     }
@@ -57,7 +55,7 @@ export async function POST(request: Request) {
       can_view: nextMenuKeys.includes(menuKey as never)
     }))
 
-    const { error } = await supabaseAdmin.from('role_menu_permissions').upsert(rows, {
+    const { error } = await supabaseAdmin.from(TABLES.roleMenuPermissions).upsert(rows, {
       onConflict: 'role_type,menu_key'
     })
 
@@ -72,7 +70,7 @@ export async function POST(request: Request) {
       )
     }
 
-    await supabaseAdmin.from('audit_logs').insert({
+    await supabaseAdmin.from(TABLES.auditLogs).insert({
       actor_user_id: profile.id,
       action_type: 'save_menu_permissions',
       target_type: 'role',

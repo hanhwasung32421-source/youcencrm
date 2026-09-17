@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { AuthGuard } from '@/components/auth-guard'
 import { AppShell } from '@/components/app-shell'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 
 type Item = {
   id: string

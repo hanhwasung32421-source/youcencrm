@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
-import { getKstYmd } from '@/lib/attendance'
+import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { getKstYmd } from '@/lib/attendance/time'
 
 type AttendanceStatus = 'not_started' | 'present' | 'late' | 'vacation' | 'early_leave' | 'review_needed'
 

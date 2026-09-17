@@ -1,3 +1,5 @@
+import { TABLES } from '@/lib/supabase/tables'
+
 export const BUILTIN_ROLE_TYPES = [
   'super_admin',
   'admin',
@@ -58,9 +60,9 @@ export function getDefaultRoleMenuMap(): Record<string, MenuKey[]> {
 
 export async function loadRoleMenuMap(supabaseAdmin: any): Promise<Record<string, MenuKey[]>> {
   const defaults = getDefaultRoleMenuMap()
-  const { data: roles } = await supabaseAdmin.from('roles').select('code').order('created_at', { ascending: true })
+  const { data: roles } = await supabaseAdmin.from(TABLES.roles).select('code').order('created_at', { ascending: true })
   const { data, error } = await supabaseAdmin
-    .from('role_menu_permissions')
+    .from(TABLES.roleMenuPermissions)
     .select('role_type, menu_key, can_view')
 
   if (error || !data) {

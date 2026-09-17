@@ -1,5 +1,6 @@
-import { createSupabaseAdminClient } from '@/lib/supabase-admin'
-import { createSupabasePublicClient } from '@/lib/supabase-public'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin-client'
+import { createSupabasePublicClient } from '@/lib/supabase/public-client'
+import { TABLES } from '@/lib/supabase/tables'
 
 export async function getProfileByAccessToken(accessToken: string) {
   const supabasePublic = createSupabasePublicClient()
@@ -11,7 +12,7 @@ export async function getProfileByAccessToken(accessToken: string) {
 
   const supabaseAdmin = createSupabaseAdminClient()
   const { data: profile, error: profileError } = await supabaseAdmin
-    .from('crm_users')
+    .from(TABLES.crmUsers)
     .select('id, name, email, role_type, custom_role_code, employment_status')
     .eq('auth_user_id', userData.user.id)
     .maybeSingle()

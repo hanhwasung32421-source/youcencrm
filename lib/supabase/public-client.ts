@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase-config'
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase/config'
 
 export function createSupabasePublicClient() {
   const url = SUPABASE_URL

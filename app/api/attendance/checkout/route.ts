@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { getProfileByAccessToken } from '@/lib/auth'
-import { getAttendanceWorkedSeconds, getKstYmd } from '@/lib/attendance'
+import { getProfileByAccessToken } from '@/lib/auth/session'
+import { getAttendanceWorkedSeconds, getKstYmd } from '@/lib/attendance/time'
+import { TABLES } from '@/lib/supabase/tables'
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
     const nowIso = new Date().toISOString()
 
     const { data: existingDay } = await supabaseAdmin
-      .from('attendance_days')
+      .from(TABLES.attendanceDays)
       .select('id, attendance_status, check_in_at, check_out_at')
       .eq('user_id', profile.id)
       .eq('work_date', today)
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
 
     const workedSeconds = getAttendanceWorkedSeconds(existingDay.check_in_at, nowIso)
     const { error: updateError } = await supabaseAdmin
-      .from('attendance_days')
+      .from(TABLES.attendanceDays)
       .update({
         check_out_at: nowIso,
         worked_minutes: Math.floor(workedSeconds / 60),
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
-    const { error: eventError } = await supabaseAdmin.from('attendance_events').insert({
+    const { error: eventError } = await supabaseAdmin.from(TABLES.attendanceEvents).insert({
       attendance_day_id: existingDay.id,
       event_type: 'correction',
       occurred_at: nowIso,
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: eventError.message }, { status: 500 })
     }
 
-    await supabaseAdmin.from('audit_logs').insert({
+    await supabaseAdmin.from(TABLES.auditLogs).insert({
       actor_user_id: profile.id,
       action_type: 'check_out',
       target_type: 'attendance_day',

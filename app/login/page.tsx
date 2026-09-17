@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
+import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -18,12 +18,7 @@ export default function LoginPage() {
 
     try {
       let loginEmail = email.trim()
-      let loginPassword = password
-
-      if (loginEmail.toLowerCase() === 'admin' && password === 'a1234') {
-        loginEmail = 'admin@youcencrm.local'
-        loginPassword = 'a1234'
-      }
+      const loginPassword = password
 
       if (!loginEmail.includes('@')) {
         const res = await fetch('/api/auth/resolve-login', {

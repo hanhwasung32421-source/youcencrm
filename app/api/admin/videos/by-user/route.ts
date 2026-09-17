@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin } from '@/lib/auth/session'
+import { TABLES } from '@/lib/supabase/tables'
 
 const SORT_KEYS = ['title', 'view_count', 'uploaded_at'] as const
 
@@ -23,11 +24,11 @@ export async function GET(request: Request) {
     const sortKey = (SORT_KEYS.includes(sortKeyRaw as any) ? sortKeyRaw : 'uploaded_at') as (typeof SORT_KEYS)[number]
     const ascending = sortDirRaw === 'asc'
 
-    const { data: userRow } = await supabaseAdmin.from('crm_users').select('id, name').eq('id', userId).maybeSingle()
+    const { data: userRow } = await supabaseAdmin.from(TABLES.crmUsers).select('id, name').eq('id', userId).maybeSingle()
     const userName = userRow?.name || '이름 없음'
 
     let query = supabaseAdmin
-      .from('videos')
+      .from(TABLES.videos)
       .select('id, title, youtube_url, published_at, created_at, view_count', { count: 'exact' })
       .eq('primary_owner_user_id', userId)
 

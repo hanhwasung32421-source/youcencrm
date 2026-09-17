@@ -2,6 +2,7 @@
 .next
 out
 dist
+tsconfig.tsbuildinfo
 
 # old build dirs
 .output

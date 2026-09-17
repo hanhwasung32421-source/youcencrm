@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireAdmin } from '@/lib/auth'
-import { getAttendanceWorkedSeconds } from '@/lib/attendance'
+import { requireAdmin } from '@/lib/auth/session'
+import { getAttendanceWorkedSeconds } from '@/lib/attendance/time'
+import { TABLES } from '@/lib/supabase/tables'
 
 const bodySchema = z.object({
   accessToken: z.string().min(10),
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
     const nowIso = new Date().toISOString()
 
     const { data: existingDay } = await supabaseAdmin
-      .from('attendance_days')
+      .from(TABLES.attendanceDays)
       .select('id, attendance_status, check_in_at, check_out_at')
       .eq('user_id', body.userId)
       .eq('work_date', body.workDate)
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
       }
       const workedSeconds = getAttendanceWorkedSeconds(existingDay.check_in_at, nowIso)
       const { error: updateError } = await supabaseAdmin
-        .from('attendance_days')
+        .from(TABLES.attendanceDays)
         .update({
           check_out_at: nowIso,
           worked_minutes: Math.floor(workedSeconds / 60),
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
       dayId = existingDay.id
     } else {
       const { data: day, error: upsertError } = await supabaseAdmin
-        .from('attendance_days')
+        .from(TABLES.attendanceDays)
         .upsert(
           {
             user_id: body.userId,
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
       dayId = day.id
     }
 
-    const { error: eventError } = await supabaseAdmin.from('attendance_events').insert({
+    const { error: eventError } = await supabaseAdmin.from(TABLES.attendanceEvents).insert({
       attendance_day_id: dayId,
       event_type: body.attendanceStatus === 'checkout' ? 'correction' : body.attendanceStatus,
       occurred_at: nowIso,
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: eventError.message }, { status: 500 })
     }
 
-    await supabaseAdmin.from('audit_logs').insert({
+    await supabaseAdmin.from(TABLES.auditLogs).insert({
       actor_user_id: profile.id,
       action_type: 'set_attendance',
       target_type: 'attendance_day',

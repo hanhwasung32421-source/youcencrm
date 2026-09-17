@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
-import { getFirstAllowedHref, getMenuDefinition, getMenuKeyByPath } from '@/lib/menu-permissions'
+import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
+import { getFirstAllowedHref, getMenuDefinition, getMenuKeyByPath } from '@/lib/menu/permissions'
 
 export function AuthGuard({
   children,
