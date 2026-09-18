@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/app-shell'
-import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson } from '@/lib/session/authed-fetch'
 
@@ -21,26 +20,21 @@ const numberFormat = new Intl.NumberFormat('ko-KR')
 export default function AdminChannelsPage() {
   const [rows, setRows] = useState<ChannelRow[]>([])
   const [unassignedCount, setUnassignedCount] = useState(0)
-  const [loading, setLoading] = useState(true)
   const { toast, showError } = useToast()
 
   useEffect(() => {
     const load = async () => {
-      try {
-        const { ok, data } = await authedFetchJson<{
-          rows?: ChannelRow[]
-          unassignedCount?: number
-          error?: string
-        }>('/api/admin/channels/summary')
-        if (!ok) {
-          showError(data?.error || '채널 요약 조회 실패')
-          return
-        }
-        setRows(data.rows || [])
-        setUnassignedCount(data.unassignedCount || 0)
-      } finally {
-        setLoading(false)
+      const { ok, data } = await authedFetchJson<{
+        rows?: ChannelRow[]
+        unassignedCount?: number
+        error?: string
+      }>('/api/admin/channels/summary')
+      if (!ok) {
+        showError(data?.error || '채널 요약 조회 실패')
+        return
       }
+      setRows(data.rows || [])
+      setUnassignedCount(data.unassignedCount || 0)
     }
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,7 +53,6 @@ export default function AdminChannelsPage() {
   return (
     <>
       <PageHeader title="채널 현황" subtitle="유튜브 계정(채널)별로 누적된 영상 통계를 합산해서 보여줍니다." />
-      {loading ? <PageLoading text="채널 현황을 불러오는 중입니다..." /> : null}
         <Toast toast={toast} />
 
         <div className="grid grid-3" style={{ marginBottom: 16 }}>

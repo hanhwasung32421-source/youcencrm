@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/app-shell'
-import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
 
@@ -27,7 +26,6 @@ export default function AdminUsersPage() {
   const [roles, setRoles] = useState<RoleItem[]>([])
   const [newRoleName, setNewRoleName] = useState('')
   const [newRoleCode, setNewRoleCode] = useState('')
-  const [loading, setLoading] = useState(true)
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
   const [addingRole, setAddingRole] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -49,24 +47,20 @@ export default function AdminUsersPage() {
   }
 
   const loadUsers = async () => {
-    try {
-      const [usersResult, rolesResult] = await Promise.all([
-        authedFetchJson<{ items: UserItem[]; error?: string }>('/api/admin/users'),
-        authedFetchJson<{ items: RoleItem[]; error?: string }>('/api/admin/roles')
-      ])
-      if (!usersResult.ok) {
-        showError(usersResult.data?.error || '직원 목록 조회 실패')
-        return
-      }
-      if (!rolesResult.ok) {
-        showError(rolesResult.data?.error || '직급 목록 조회 실패')
-        return
-      }
-      setItems(usersResult.data.items || [])
-      setRoles(rolesResult.data.items || [])
-    } finally {
-      setLoading(false)
+    const [usersResult, rolesResult] = await Promise.all([
+      authedFetchJson<{ items: UserItem[]; error?: string }>('/api/admin/users'),
+      authedFetchJson<{ items: RoleItem[]; error?: string }>('/api/admin/roles')
+    ])
+    if (!usersResult.ok) {
+      showError(usersResult.data?.error || '직원 목록 조회 실패')
+      return
     }
+    if (!rolesResult.ok) {
+      showError(rolesResult.data?.error || '직급 목록 조회 실패')
+      return
+    }
+    setItems(usersResult.data.items || [])
+    setRoles(rolesResult.data.items || [])
   }
 
   useEffect(() => {
@@ -127,7 +121,6 @@ export default function AdminUsersPage() {
   return (
     <>
       <PageHeader title="직원 직급 관리" subtitle="총 관리자와 관리자는 하위 직원의 직급을 변경할 수 있습니다." />
-      {loading ? <PageLoading text="직원 목록을 불러오는 중입니다..." /> : null}
         <Toast toast={toast} />
         <div className="panel">
           <div className="panel-header">

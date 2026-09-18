@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/app-shell'
-import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { BarChartCard } from '@/components/bar-chart-card'
 import { authedFetchJson } from '@/lib/session/authed-fetch'
@@ -43,7 +42,6 @@ type SearchResponse = {
 export default function AdminDashboardPage() {
   const year = useMemo(() => new Date().getFullYear(), [])
   const [table, setTable] = useState<TableResponse | null>(null)
-  const [loading, setLoading] = useState(true)
   const { toast, showError } = useToast()
 
   const [searchStart, setSearchStart] = useState(`${year}-01-01`)
@@ -61,17 +59,13 @@ export default function AdminDashboardPage() {
   }
 
   const loadTable = async () => {
-    try {
-      const { ok, data } = await authedFetchJson<TableResponse & { error?: string }>('/api/dashboard/admin')
-      if (!ok || data?.error) {
-        showError(data?.error || '대시보드 조회 실패')
-        return
-      }
-      if (data.mode !== 'table') return
-      setTable(data)
-    } finally {
-      setLoading(false)
+    const { ok, data } = await authedFetchJson<TableResponse & { error?: string }>('/api/dashboard/admin')
+    if (!ok || data?.error) {
+      showError(data?.error || '대시보드 조회 실패')
+      return
     }
+    if (data.mode !== 'table') return
+    setTable(data)
   }
 
   const search = async (override?: { start: string; end: string }) => {
@@ -175,7 +169,6 @@ export default function AdminDashboardPage() {
   return (
     <>
       <PageHeader title="관리자 대시보드" subtitle="직원별 업무 효율을 확인합니다." />
-      {loading ? <PageLoading text="대시보드를 불러오는 중입니다..." /> : null}
         <Toast toast={toast} />
 
         {searchResult ? null : (

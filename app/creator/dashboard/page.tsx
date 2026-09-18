@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/app-shell'
 import { BarChartCard } from '@/components/bar-chart-card'
-import { PageLoading } from '@/components/page-loading'
 import { authedFetchJson } from '@/lib/session/authed-fetch'
 
 type Stats = {
@@ -34,7 +33,6 @@ export default function CreatorDashboardPage() {
     latest: [],
     charts: { viewByLatest: [], durationByLatest: [], dailyRegistrations: [], contentTypes: [] }
   })
-  const [loading, setLoading] = useState(true)
 
   const formatDate = (value: string | null) => {
     if (!value) return '-'
@@ -55,13 +53,9 @@ export default function CreatorDashboardPage() {
 
   useEffect(() => {
     const run = async () => {
-      try {
-        const { ok, data } = await authedFetchJson<Stats>('/api/dashboard/creator')
-        if (!ok) return
-        setStats(data)
-      } finally {
-        setLoading(false)
-      }
+      const { ok, data } = await authedFetchJson<Stats>('/api/dashboard/creator')
+      if (!ok) return
+      setStats(data)
     }
     void run()
   }, [])
@@ -69,7 +63,6 @@ export default function CreatorDashboardPage() {
   return (
     <>
       <PageHeader title="유튜버 대시보드" subtitle="업로드 후 영상 URL을 입력해 통계를 누적합니다." />
-      {loading ? <PageLoading text="대시보드를 불러오는 중입니다..." /> : null}
         <div className="grid grid-4">
           <div className="metric-card">
             <div className="card-title">오늘 CRM 등록</div>

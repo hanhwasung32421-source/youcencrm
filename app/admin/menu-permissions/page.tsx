@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/app-shell'
-import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
 import { MENU_DEFINITIONS } from '@/lib/menu/permissions'
@@ -18,29 +17,24 @@ export default function AdminMenuPermissionsPage() {
   const [roles, setRoles] = useState<RoleItem[]>([])
   const [items, setItems] = useState<Record<string, string[]>>({})
   const [menus, setMenus] = useState<MenuItem[]>([...MENU_DEFINITIONS])
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const { toast, showSuccess, showError } = useToast()
 
   const loadPermissions = async () => {
-    try {
-      const { ok, data } = await authedFetchJson<{
-        roles?: RoleItem[]
-        menus?: MenuItem[]
-        items?: Record<string, string[]>
-        error?: string
-      }>('/api/admin/menu-permissions')
-      if (!ok) {
-        showError(data?.error || '메뉴 권한 조회 실패')
-        return
-      }
-
-      setRoles(data.roles || [])
-      setMenus(data.menus || [...MENU_DEFINITIONS])
-      setItems(data.items || {})
-    } finally {
-      setLoading(false)
+    const { ok, data } = await authedFetchJson<{
+      roles?: RoleItem[]
+      menus?: MenuItem[]
+      items?: Record<string, string[]>
+      error?: string
+    }>('/api/admin/menu-permissions')
+    if (!ok) {
+      showError(data?.error || '메뉴 권한 조회 실패')
+      return
     }
+
+    setRoles(data.roles || [])
+    setMenus(data.menus || [...MENU_DEFINITIONS])
+    setItems(data.items || {})
   }
 
   useEffect(() => {
@@ -84,7 +78,6 @@ export default function AdminMenuPermissionsPage() {
   return (
     <>
       <PageHeader title="메뉴 권한 관리" subtitle="총 관리자가 역할별로 볼 수 있는 메뉴를 직접 체크해서 저장합니다." />
-      {loading ? <PageLoading text="메뉴 권한을 불러오는 중입니다..." /> : null}
         <Toast toast={toast} />
         <div className="grid grid-2">
           <div className="panel form-stack">

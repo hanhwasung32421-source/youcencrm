@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { getAccessToken } from '@/lib/session/authed-fetch'
-import { getFirstAllowedHref, getMenuDefinition, getMenuKeyByPath } from '@/lib/menu/permissions'
+import { getFirstAllowedHref, getMenuKeyByPath } from '@/lib/menu/permissions'
 import { fetchMe } from '@/lib/session/me-client'
 
 export function AuthGuard({
@@ -62,17 +62,7 @@ export function AuthGuard({
   }
 
   if (!ready) {
-    const currentMenuKey = getMenuKeyByPath(pathname)
-    const label = (currentMenuKey ? getMenuDefinition(currentMenuKey)?.label : null) || '메뉴'
-    const message = `${label} 메뉴 진입 중`
-    return (
-      <div className="loading-overlay">
-        <div className="loading-modal">
-          <div className="loading-spinner" />
-          <div className="loading-text">{message}</div>
-        </div>
-      </div>
-    )
+    return null
   }
 
   return <>{children}</>

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/app-shell'
-import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
 import { formatWorkedHms } from '@/lib/attendance/time'
@@ -49,32 +48,27 @@ export default function AdminAttendancePage() {
   const [monthDays, setMonthDays] = useState<number[]>([])
   const [selectedUserId, setSelectedUserId] = useState('')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
-  const [loading, setLoading] = useState(true)
   const { toast, showSuccess, showError } = useToast()
   const [saving, setSaving] = useState(false)
 
   const loadData = async () => {
-    try {
-      const { ok, data } = await authedFetchJson<{
-        users?: UserItem[]
-        rows?: AttendanceRow[]
-        weekDays?: Array<{ ymd: string; label: string }>
-        monthDays?: number[]
-        error?: string
-      }>(`/api/admin/attendance?period=${period}`)
-      if (!ok) {
-        showError(data?.error || '근태 조회 실패')
-        return
-      }
-      setUsers(data.users || [])
-      setRows(data.rows || [])
-      setWeekDays(data.weekDays || [])
-      setMonthDays(data.monthDays || [])
-      if (!selectedUserId && data.users?.[0]?.id) {
-        setSelectedUserId(data.users[0].id)
-      }
-    } finally {
-      setLoading(false)
+    const { ok, data } = await authedFetchJson<{
+      users?: UserItem[]
+      rows?: AttendanceRow[]
+      weekDays?: Array<{ ymd: string; label: string }>
+      monthDays?: number[]
+      error?: string
+    }>(`/api/admin/attendance?period=${period}`)
+    if (!ok) {
+      showError(data?.error || '근태 조회 실패')
+      return
+    }
+    setUsers(data.users || [])
+    setRows(data.rows || [])
+    setWeekDays(data.weekDays || [])
+    setMonthDays(data.monthDays || [])
+    if (!selectedUserId && data.users?.[0]?.id) {
+      setSelectedUserId(data.users[0].id)
     }
   }
 
@@ -130,8 +124,6 @@ export default function AdminAttendancePage() {
   return (
     <>
       <PageHeader title="근태 관리" subtitle="일별, 주별, 월별로 직원 근태를 빠르게 확인하고 필요한 값만 수정합니다." />
-      {loading ? <PageLoading text="근태 정보를 불러오는 중입니다..." /> : null}
-        {saving ? <PageLoading text="근태 적용중입니다..." /> : null}
         <Toast toast={toast} />
 
         <div className="toolbar">

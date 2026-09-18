@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/app-shell'
-import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
 
@@ -24,7 +23,6 @@ export default function CreatorVideosPage() {
   const [stockName, setStockName] = useState('')
   const [contentCategory, setContentCategory] = useState('')
   const { toast, showSuccess, showError } = useToast()
-  const [initialLoading, setInitialLoading] = useState(true)
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({ pageSize: 20, totalCount: 0 })
@@ -46,7 +44,7 @@ export default function CreatorVideosPage() {
   }
 
   useEffect(() => {
-    void loadMyVideos(1).finally(() => setInitialLoading(false))
+    void loadMyVideos(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -107,8 +105,6 @@ export default function CreatorVideosPage() {
   return (
     <>
       <PageHeader title="영상 등록" subtitle="업로드 완료 후 URL과 기본 분류만 입력하면 업로드 시각과 통계가 자동 저장됩니다." />
-      {initialLoading ? <PageLoading text="영상 목록을 불러오는 중입니다..." /> : null}
-        {loading ? <PageLoading text="업로드중입니다..." /> : null}
         <Toast toast={toast} />
         <div className="grid grid-2">
           <div className="panel form-stack">
@@ -143,7 +139,7 @@ export default function CreatorVideosPage() {
               <label className="label">비고</label>
               <input className="input" value={contentCategory} onChange={(e) => setContentCategory(e.target.value)} />
             </div>
-            <button className="button" disabled={loading} onClick={submit}>작성 버튼</button>
+            <button className="button" disabled={loading} onClick={submit}>{loading ? '저장 중...' : '작성 버튼'}</button>
           </div>
 
           <div className="panel">

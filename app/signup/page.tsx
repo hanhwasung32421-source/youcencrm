@@ -155,14 +155,6 @@ export default function SignupPage() {
 
   return (
     <div className="auth-wrap">
-      {loading ? (
-        <div className="loading-overlay">
-          <div className="loading-modal">
-            <div className="loading-spinner" />
-            <div className="loading-text">처리중입니다...</div>
-          </div>
-        </div>
-      ) : null}
       <div className="auth-shell">
         <div className="panel soft">
           <img className="auth-logo" src="/logo-ant.png" alt="" width={56} height={56} />
@@ -188,7 +180,7 @@ export default function SignupPage() {
                 }}
               />
               <button className="button secondary nowrap" type="button" disabled={loading} onClick={checkEmailDuplicate}>
-                중복확인
+                {loading ? '확인 중...' : '중복확인'}
               </button>
             </div>
             {emailCheckError ? <div className="message-error small">{emailCheckError}</div> : null}
@@ -278,7 +270,7 @@ export default function SignupPage() {
                 </div>
               </div>
               <button className="button" disabled={loading} onClick={onSubmit}>
-                가입하기
+                {loading ? '처리 중...' : '가입하기'}
               </button>
             </>
           ) : null}

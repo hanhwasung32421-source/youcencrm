@@ -4,7 +4,6 @@ import { Suspense } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { PageHeader } from '@/components/app-shell'
-import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson } from '@/lib/session/authed-fetch'
 
@@ -29,7 +28,6 @@ function AdminUploadsPageInner() {
 
   const [data, setData] = useState<ApiResponse | null>(null)
   const { toast, showError } = useToast()
-  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [sortKey, setSortKey] = useState<'uploaded_at' | 'title' | 'view_count'>('uploaded_at')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -48,22 +46,18 @@ function AdminUploadsPageInner() {
   }
 
   const load = async (nextPage = page, nextSortKey = sortKey, nextSortDir = sortDir) => {
-    try {
-      const qs = new URLSearchParams({
-        userId,
-        page: String(nextPage),
-        sortKey: nextSortKey,
-        sortDir: nextSortDir
-      }).toString()
-      const { ok, data: json } = await authedFetchJson<ApiResponse & { error?: string }>(`/api/admin/videos/by-user?${qs}`)
-      if (!ok) {
-        showError((json as any)?.error || '업로드 내역 조회 실패')
-        return
-      }
-      setData(json as ApiResponse)
-    } finally {
-      setLoading(false)
+    const qs = new URLSearchParams({
+      userId,
+      page: String(nextPage),
+      sortKey: nextSortKey,
+      sortDir: nextSortDir
+    }).toString()
+    const { ok, data: json } = await authedFetchJson<ApiResponse & { error?: string }>(`/api/admin/videos/by-user?${qs}`)
+    if (!ok) {
+      showError((json as any)?.error || '업로드 내역 조회 실패')
+      return
     }
+    setData(json as ApiResponse)
   }
 
   useEffect(() => {
@@ -103,7 +97,6 @@ function AdminUploadsPageInner() {
   return (
     <>
       <PageHeader title="업로드 내역" subtitle={data ? `${data.user.name} 님의 업로드 내역입니다.` : '업로드 내역을 불러옵니다.'} />
-      {loading ? <PageLoading text="업로드 내역을 불러오는 중입니다..." /> : null}
         <Toast toast={toast} />
 
         <div className="panel">
