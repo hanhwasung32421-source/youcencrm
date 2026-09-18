@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AuthGuard } from '@/components/auth-guard'
-import { AppShell } from '@/components/app-shell'
+import { PageHeader } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson } from '@/lib/session/authed-fetch'
@@ -58,9 +57,9 @@ export default function AdminChannelsPage() {
   )
 
   return (
-    <AuthGuard requireAdmin>
-      <AppShell title="채널 현황" subtitle="유튜브 계정(채널)별로 누적된 영상 통계를 합산해서 보여줍니다.">
-        {loading ? <PageLoading text="채널 현황을 불러오는 중입니다..." /> : null}
+    <>
+      <PageHeader title="채널 현황" subtitle="유튜브 계정(채널)별로 누적된 영상 통계를 합산해서 보여줍니다." />
+      {loading ? <PageLoading text="채널 현황을 불러오는 중입니다..." /> : null}
         <Toast toast={toast} />
 
         <div className="grid grid-3" style={{ marginBottom: 16 }}>
@@ -134,7 +133,6 @@ export default function AdminChannelsPage() {
             </p>
           ) : null}
         </div>
-      </AppShell>
-    </AuthGuard>
+    </>
   )
 }

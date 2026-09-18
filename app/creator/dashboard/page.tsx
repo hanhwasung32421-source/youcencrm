@@ -2,8 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { AuthGuard } from '@/components/auth-guard'
-import { AppShell } from '@/components/app-shell'
+import { PageHeader } from '@/components/app-shell'
 import { BarChartCard } from '@/components/bar-chart-card'
 import { PageLoading } from '@/components/page-loading'
 import { authedFetchJson } from '@/lib/session/authed-fetch'
@@ -68,9 +67,9 @@ export default function CreatorDashboardPage() {
   }, [])
 
   return (
-    <AuthGuard>
-      <AppShell title="유튜버 대시보드" subtitle="업로드 후 영상 URL을 입력해 통계를 누적합니다.">
-        {loading ? <PageLoading text="대시보드를 불러오는 중입니다..." /> : null}
+    <>
+      <PageHeader title="유튜버 대시보드" subtitle="업로드 후 영상 URL을 입력해 통계를 누적합니다." />
+      {loading ? <PageLoading text="대시보드를 불러오는 중입니다..." /> : null}
         <div className="grid grid-4">
           <div className="metric-card">
             <div className="card-title">오늘 CRM 등록</div>
@@ -133,7 +132,6 @@ export default function CreatorDashboardPage() {
           <BarChartCard title="최근 7일 등록 수" subtitle="본인 영상 등록 추이입니다." items={stats.charts.dailyRegistrations} tone="violet" />
           <BarChartCard title="콘텐츠 형식 분포" subtitle="본인 등록 영상의 형식별 개수입니다." items={stats.charts.contentTypes} tone="amber" />
         </div>
-      </AppShell>
-    </AuthGuard>
+    </>
   )
 }

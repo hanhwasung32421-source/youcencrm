@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AuthGuard } from '@/components/auth-guard'
-import { AppShell } from '@/components/app-shell'
+import { PageHeader } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
@@ -106,9 +105,9 @@ export default function CreatorVideosPage() {
   }
 
   return (
-    <AuthGuard>
-      <AppShell title="영상 등록" subtitle="업로드 완료 후 URL과 기본 분류만 입력하면 업로드 시각과 통계가 자동 저장됩니다.">
-        {initialLoading ? <PageLoading text="영상 목록을 불러오는 중입니다..." /> : null}
+    <>
+      <PageHeader title="영상 등록" subtitle="업로드 완료 후 URL과 기본 분류만 입력하면 업로드 시각과 통계가 자동 저장됩니다." />
+      {initialLoading ? <PageLoading text="영상 목록을 불러오는 중입니다..." /> : null}
         {loading ? <PageLoading text="업로드중입니다..." /> : null}
         <Toast toast={toast} />
         <div className="grid grid-2">
@@ -186,7 +185,6 @@ export default function CreatorVideosPage() {
             ) : null}
           </div>
         </div>
-      </AppShell>
-    </AuthGuard>
+    </>
   )
 }

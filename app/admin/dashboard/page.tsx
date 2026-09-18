@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { AuthGuard } from '@/components/auth-guard'
-import { AppShell } from '@/components/app-shell'
+import { PageHeader } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { BarChartCard } from '@/components/bar-chart-card'
@@ -174,9 +173,9 @@ export default function AdminDashboardPage() {
   }, [table])
 
   return (
-    <AuthGuard requireAdmin>
-      <AppShell title="관리자 대시보드" subtitle="직원별 업무 효율을 확인합니다.">
-        {loading ? <PageLoading text="대시보드를 불러오는 중입니다..." /> : null}
+    <>
+      <PageHeader title="관리자 대시보드" subtitle="직원별 업무 효율을 확인합니다." />
+      {loading ? <PageLoading text="대시보드를 불러오는 중입니다..." /> : null}
         <Toast toast={toast} />
 
         {searchResult ? null : (
@@ -285,7 +284,6 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
-      </AppShell>
-    </AuthGuard>
+    </>
   )
 }

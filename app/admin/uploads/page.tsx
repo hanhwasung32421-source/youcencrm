@@ -3,8 +3,7 @@
 import { Suspense } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { AuthGuard } from '@/components/auth-guard'
-import { AppShell } from '@/components/app-shell'
+import { PageHeader } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson } from '@/lib/session/authed-fetch'
@@ -102,9 +101,9 @@ function AdminUploadsPageInner() {
   }, [totalPages])
 
   return (
-    <AuthGuard requireAdmin>
-      <AppShell title="업로드 내역" subtitle={data ? `${data.user.name} 님의 업로드 내역입니다.` : '업로드 내역을 불러옵니다.'}>
-        {loading ? <PageLoading text="업로드 내역을 불러오는 중입니다..." /> : null}
+    <>
+      <PageHeader title="업로드 내역" subtitle={data ? `${data.user.name} 님의 업로드 내역입니다.` : '업로드 내역을 불러옵니다.'} />
+      {loading ? <PageLoading text="업로드 내역을 불러오는 중입니다..." /> : null}
         <Toast toast={toast} />
 
         <div className="panel">
@@ -175,8 +174,7 @@ function AdminUploadsPageInner() {
             })}
           </div>
         </div>
-      </AppShell>
-    </AuthGuard>
+    </>
   )
 }
 

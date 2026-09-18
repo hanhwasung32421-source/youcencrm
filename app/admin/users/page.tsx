@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { AuthGuard } from '@/components/auth-guard'
-import { AppShell } from '@/components/app-shell'
+import { PageHeader } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
@@ -126,9 +125,9 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <AuthGuard requireAdmin>
-      <AppShell title="직원 직급 관리" subtitle="총 관리자와 관리자는 하위 직원의 직급을 변경할 수 있습니다.">
-        {loading ? <PageLoading text="직원 목록을 불러오는 중입니다..." /> : null}
+    <>
+      <PageHeader title="직원 직급 관리" subtitle="총 관리자와 관리자는 하위 직원의 직급을 변경할 수 있습니다." />
+      {loading ? <PageLoading text="직원 목록을 불러오는 중입니다..." /> : null}
         <Toast toast={toast} />
         <div className="panel">
           <div className="panel-header">
@@ -203,7 +202,6 @@ export default function AdminUsersPage() {
             </button>
           </div>
         </div>
-      </AppShell>
-    </AuthGuard>
+    </>
   )
 }

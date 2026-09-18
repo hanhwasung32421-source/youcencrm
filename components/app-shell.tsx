@@ -15,15 +15,13 @@ type Me = {
   allowedMenuKeys?: string[]
 }
 
-export function AppShell({
-  title,
-  subtitle,
-  children
-}: {
-  title: string
-  subtitle?: string
-  children: React.ReactNode
-}) {
+// 예전에는 페이지마다 <AuthGuard><AppShell title=...>를 따로 감쌌다. Next.js
+// App Router에서는 라우트가 바뀌어도 같은 layout.tsx에 걸린 컴포넌트는 다시
+// 마운트되지 않는데, 페이지 안에 있던 AppShell은 매 이동마다 새로 마운트되면서
+// 세션 확인(getSession)과 프로필 조회(/api/auth/me)를 또 거쳤다. 사이드바/계정
+// 영역만 담당하는 이 프레임을 app/admin/layout.tsx, app/creator/layout.tsx로
+// 옮겨서 같은 구역 안에서는 한 번만 마운트되게 한다.
+export function AppShellFrame({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [me, setMe] = useState<Me | null>(null)
@@ -64,7 +62,6 @@ export function AppShell({
     me?.allowedMenuKeys && me.allowedMenuKeys.length > 0
       ? me.allowedMenuKeys
       : DEFAULT_ROLE_MENU_KEYS[(effectiveRoleType as keyof typeof DEFAULT_ROLE_MENU_KEYS) || 'staff'] || []
-  const isAdmin = pathname.startsWith('/admin') || ['super_admin', 'admin'].includes(effectiveRoleType)
   const navItems = MENU_DEFINITIONS.filter((menu) => allowedMenuKeys.includes(menu.key))
 
   return (
@@ -114,17 +111,27 @@ export function AppShell({
         >
           {sidebarOpen ? '메뉴 닫기' : '메뉴 열기'}
         </button>
-        <div className="document-head">
-          <div className="document-head-top">
-            <div>
-              <h1 className="page-title">{title}</h1>
-              {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
-            </div>
-            <div className="page-badge">{isAdmin ? '관리자 작업 공간' : '유튜버 작업 공간'}</div>
-          </div>
-        </div>
         {children}
       </section>
+    </div>
+  )
+}
+
+// 페이지 제목/부제/작업공간 배지. AppShellFrame과 달리 페이지마다 내용이 달라서
+// layout이 아니라 각 page.tsx가 직접 렌더링한다.
+export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  const pathname = usePathname()
+  const isAdmin = pathname.startsWith('/admin')
+
+  return (
+    <div className="document-head">
+      <div className="document-head-top">
+        <div>
+          <h1 className="page-title">{title}</h1>
+          {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
+        </div>
+        <div className="page-badge">{isAdmin ? '관리자 작업 공간' : '유튜버 작업 공간'}</div>
+      </div>
     </div>
   )
 }

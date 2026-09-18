@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { AuthGuard } from '@/components/auth-guard'
-import { AppShell } from '@/components/app-shell'
+import { PageHeader } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
@@ -83,9 +82,9 @@ export default function AdminMenuPermissionsPage() {
   }
 
   return (
-    <AuthGuard requireAdmin>
-      <AppShell title="메뉴 권한 관리" subtitle="총 관리자가 역할별로 볼 수 있는 메뉴를 직접 체크해서 저장합니다.">
-        {loading ? <PageLoading text="메뉴 권한을 불러오는 중입니다..." /> : null}
+    <>
+      <PageHeader title="메뉴 권한 관리" subtitle="총 관리자가 역할별로 볼 수 있는 메뉴를 직접 체크해서 저장합니다." />
+      {loading ? <PageLoading text="메뉴 권한을 불러오는 중입니다..." /> : null}
         <Toast toast={toast} />
         <div className="grid grid-2">
           <div className="panel form-stack">
@@ -154,7 +153,6 @@ export default function AdminMenuPermissionsPage() {
             </div>
           </div>
         </div>
-      </AppShell>
-    </AuthGuard>
+    </>
   )
 }

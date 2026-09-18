@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AuthGuard } from '@/components/auth-guard'
-import { AppShell } from '@/components/app-shell'
+import { PageHeader } from '@/components/app-shell'
 import { PageLoading } from '@/components/page-loading'
 import { Toast, useToast } from '@/components/toast'
 import { authedFetchJson, authedPostJson } from '@/lib/session/authed-fetch'
@@ -129,9 +128,9 @@ export default function AdminAttendancePage() {
   const badgeClass = (status: string) => STATUS_CLASS_MAP[status] || 'attendance-status-empty'
 
   return (
-    <AuthGuard requireAdmin>
-      <AppShell title="근태 관리" subtitle="일별, 주별, 월별로 직원 근태를 빠르게 확인하고 필요한 값만 수정합니다.">
-        {loading ? <PageLoading text="근태 정보를 불러오는 중입니다..." /> : null}
+    <>
+      <PageHeader title="근태 관리" subtitle="일별, 주별, 월별로 직원 근태를 빠르게 확인하고 필요한 값만 수정합니다." />
+      {loading ? <PageLoading text="근태 정보를 불러오는 중입니다..." /> : null}
         {saving ? <PageLoading text="근태 적용중입니다..." /> : null}
         <Toast toast={toast} />
 
@@ -262,8 +261,7 @@ export default function AdminAttendancePage() {
             </div>
           </div>
         </div>
-      </AppShell>
-    </AuthGuard>
+    </>
   )
 }
 
