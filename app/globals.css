@@ -122,6 +122,19 @@ textarea {
   margin-left: auto;
 }
 
+.app-footer {
+  border-top: 1px solid var(--line);
+  padding: 20px 0 28px;
+}
+
+.bottom-version {
+  display: flex;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .topbar-action-button {
   min-width: 74px;
   padding: 10px 14px;

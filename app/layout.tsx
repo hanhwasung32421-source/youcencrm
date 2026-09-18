@@ -2,6 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { BUILD_VERSION } from '@/lib/generated-version'
 import { TopbarAttendanceControls } from '@/components/topbar-attendance-controls'
+import { VersionBadge } from '@/components/version-badge'
 
 export const metadata: Metadata = {
   title: '여왕개미미디어 CRM',
@@ -34,6 +35,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </header>
           <main className="container page">{children}</main>
+          <footer className="app-footer">
+            <div className="container">
+              <VersionBadge version={BUILD_VERSION} className="bottom-version" />
+            </div>
+          </footer>
         </div>
       </body>
     </html>
