@@ -1,0 +1,178 @@
+/*
+  V3 — "노션 스타일 미니멀/문서형 UI"
+  메인(main) globals.css를 건드리지 않고, .v3-theme로 감싼 영역 안에서만
+  디자인 토큰과 몇몇 하드코딩된 색상 셀렉터를 재정의한다.
+*/
+
+body:has(.v3-theme) {
+  background: #ffffff;
+}
+
+.v3-theme {
+  --bg: #ffffff;
+  --bg-soft: #f7f6f4;
+  --panel: #ffffff;
+  --panel-soft: #f7f6f4;
+  --line: #edece9;
+  --line-strong: #ddd6cd;
+  --text: #37352f;
+  --muted: #787774;
+  --primary: #3b6fe0;
+  --primary-soft: rgba(59, 111, 224, 0.1);
+  --danger: #e0574b;
+  --success: #2f9e6e;
+  --warning: #d9822b;
+  --violet: #9b7ede;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+}
+
+.v3-theme .panel,
+.v3-theme .metric-card,
+.v3-theme .list-item,
+.v3-theme .document-head {
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+.v3-theme .button {
+  border-radius: 8px;
+}
+
+.v3-theme .page-badge {
+  background: var(--panel-soft);
+  color: var(--muted);
+}
+
+.v3-theme .input,
+.v3-theme .select,
+.v3-theme .textarea {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.v3-theme .input:focus,
+.v3-theme .select:focus,
+.v3-theme .textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.v3-theme .label {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.v3-theme .metric-card,
+.v3-theme .document-head {
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.v3-theme .button.secondary {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.v3-theme .button.secondary.active {
+  border-color: var(--primary);
+}
+
+.v3-theme .list-item {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  transition: background-color 0.12s ease;
+}
+
+.v3-theme .list-item:hover {
+  background: var(--panel-soft);
+}
+
+.v3-theme .list-item.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.v3-theme .pill {
+  background: var(--panel-soft);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.v3-theme .sidebar-section {
+  background: var(--bg-soft);
+  border: none;
+  box-shadow: none;
+}
+
+.v3-theme .sidebar-link.active {
+  border-color: var(--primary);
+}
+
+.v3-theme .doc-highlight {
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--text);
+  border-radius: 8px;
+}
+
+.v3-theme .empty-state {
+  background: var(--bg-soft);
+  border-color: var(--line-strong);
+}
+
+.v3-theme .message-success,
+.v3-theme .message-error {
+  background: var(--panel);
+  border-radius: 8px;
+}
+
+.v3-theme .message-success {
+  color: #1f7a52;
+  background: rgba(47, 158, 110, 0.08);
+}
+
+.v3-theme .message-error {
+  color: #b8392f;
+  background: rgba(224, 87, 75, 0.08);
+}
+
+.v3-theme .attendance-status-present,
+.v3-theme .attendance-status-checkout {
+  background: rgba(47, 158, 110, 0.12);
+  color: #1f7a52;
+}
+
+.v3-theme .attendance-status-late {
+  background: rgba(217, 130, 43, 0.14);
+  color: #a15e17;
+}
+
+.v3-theme .attendance-status-early-leave {
+  background: rgba(224, 87, 75, 0.14);
+  color: #b8392f;
+}
+
+.v3-theme .data-table {
+  background: var(--panel);
+  border-radius: 10px;
+}
+
+.v3-theme .data-table-row {
+  border-bottom: 1px solid var(--line);
+}
+
+.v3-theme .data-table-row:hover {
+  background: var(--bg-soft);
+}
+
+.v3-theme .data-table-row:nth-child(even) {
+  background: transparent;
+}

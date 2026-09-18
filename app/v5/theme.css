@@ -1,0 +1,186 @@
+/*
+  V5 — "카드형 모듈러 위젯 대시보드" (모던 SaaS)
+  메인(main) globals.css를 건드리지 않고, .v5-theme로 감싼 영역 안에서만
+  디자인 토큰과 몇몇 하드코딩된 색상 셀렉터를 재정의한다.
+*/
+
+body:has(.v5-theme) {
+  background: #f6f7fb;
+}
+
+.v5-theme {
+  --bg: #f6f7fb;
+  --bg-soft: #eef0f7;
+  --panel: #ffffff;
+  --panel-soft: #f6f7fb;
+  --line: #e7e9f2;
+  --line-strong: #d7dae8;
+  --text: #14161f;
+  --muted: #6b7280;
+  --primary: #4f46e5;
+  --primary-soft: #eef0ff;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --violet: #8b5cf6;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 2px 8px rgba(16, 24, 40, 0.06);
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+}
+
+.v5-theme .card-value {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.v5-theme .panel,
+.v5-theme .metric-card,
+.v5-theme .list-item,
+.v5-theme .document-head {
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  border-color: var(--line);
+  transition: box-shadow 0.15s ease;
+}
+
+.v5-theme .list-item:hover {
+  box-shadow: 0 4px 16px rgba(16, 24, 40, 0.1);
+}
+
+.v5-theme .button {
+  border-radius: 10px;
+}
+
+.v5-theme .page-badge {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.v5-theme .input,
+.v5-theme .select,
+.v5-theme .textarea {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.v5-theme .input:focus,
+.v5-theme .select:focus,
+.v5-theme .textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.v5-theme .label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.v5-theme .metric-card,
+.v5-theme .document-head {
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.v5-theme .button.secondary {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.v5-theme .button.secondary.active {
+  border-color: var(--primary);
+}
+
+.v5-theme .list-item {
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.v5-theme .list-item.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.v5-theme .pill {
+  background: var(--panel-soft);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.v5-theme .sidebar-section {
+  background: var(--panel);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.v5-theme .sidebar-link.active {
+  border-color: var(--primary);
+}
+
+.v5-theme .doc-highlight {
+  border: 1px solid var(--line);
+  background: var(--primary-soft);
+  color: var(--text);
+  border-radius: 12px;
+}
+
+.v5-theme .empty-state {
+  background: var(--bg-soft);
+  border-color: var(--line-strong);
+  border-radius: 16px;
+}
+
+.v5-theme .message-success,
+.v5-theme .message-error {
+  background: var(--panel);
+  border-radius: 10px;
+}
+
+.v5-theme .message-success {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.v5-theme .message-error {
+  color: #b91c1c;
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.v5-theme .attendance-status-present,
+.v5-theme .attendance-status-checkout {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.v5-theme .attendance-status-late {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.v5-theme .attendance-status-early-leave {
+  background: rgba(220, 38, 38, 0.14);
+  color: #b91c1c;
+}
+
+.v5-theme .data-table {
+  background: var(--panel);
+  border-radius: 16px;
+}
+
+.v5-theme .data-table-row {
+  border-bottom: 1px solid var(--line);
+}
+
+.v5-theme .data-table-row:hover {
+  background: var(--bg-soft);
+}
+
+.v5-theme .data-table-row:nth-child(even) {
+  background: transparent;
+}

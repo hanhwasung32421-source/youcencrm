@@ -1,0 +1,201 @@
+/*
+  V4 — "칸반/타임라인 중심 워크플로우 UI"
+  메인(main) globals.css를 건드리지 않고, .v4-theme로 감싼 영역 안에서만
+  디자인 토큰과 몇몇 하드코딩된 색상 셀렉터를 재정의한다.
+*/
+
+body:has(.v4-theme) {
+  background: #f8fafc;
+}
+
+.v4-theme {
+  --bg: #f8fafc;
+  --bg-soft: #f1f5f9;
+  --panel: #ffffff;
+  --panel-soft: #f1f5f9;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #4f46e5;
+  --primary-soft: rgba(79, 70, 229, 0.1);
+  --danger: #f43f5e;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --violet: #8b5cf6;
+  --shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+}
+
+.v4-theme .card-value {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.v4-theme .panel,
+.v4-theme .metric-card,
+.v4-theme .list-item,
+.v4-theme .document-head {
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.v4-theme .list-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+}
+
+.v4-theme .button {
+  border-radius: 10px;
+}
+
+.v4-theme .page-badge {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.v4-theme .input,
+.v4-theme .select,
+.v4-theme .textarea {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.v4-theme .input:focus,
+.v4-theme .select:focus,
+.v4-theme .textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.v4-theme .label {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.v4-theme .metric-card,
+.v4-theme .document-head {
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.v4-theme .button.secondary {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.v4-theme .button.secondary.active {
+  border-color: var(--primary);
+}
+
+.v4-theme .list-item {
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.v4-theme .list-item.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.v4-theme .pill {
+  background: var(--panel-soft);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+/* 사이드바만 다크 네이비로 대비를 줘 "관제탑" 느낌을 강화 (스펙 지정) */
+.v4-theme .sidebar-section {
+  background: #111827;
+  border-color: #1f2937;
+}
+
+.v4-theme .sidebar-caption {
+  color: #64748b;
+}
+
+.v4-theme .sidebar-link {
+  color: #cbd5e1;
+}
+
+.v4-theme .sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: transparent;
+}
+
+.v4-theme .sidebar-link.active {
+  background: var(--primary-soft);
+  color: #a5b4fc;
+  border-color: var(--primary);
+}
+
+.v4-theme .sidebar-note {
+  color: #64748b;
+}
+
+.v4-theme .doc-highlight {
+  border: 1px solid var(--primary);
+  background: var(--primary-soft);
+  color: var(--text);
+}
+
+.v4-theme .empty-state {
+  background: var(--bg-soft);
+  border-color: var(--line-strong);
+}
+
+.v4-theme .message-success,
+.v4-theme .message-error {
+  background: var(--panel);
+  border-radius: 10px;
+}
+
+.v4-theme .message-success {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.v4-theme .message-error {
+  color: #be123c;
+  background: rgba(244, 63, 94, 0.1);
+}
+
+.v4-theme .attendance-status-present,
+.v4-theme .attendance-status-checkout {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.v4-theme .attendance-status-late {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.v4-theme .attendance-status-early-leave {
+  background: rgba(244, 63, 94, 0.14);
+  color: #be123c;
+}
+
+.v4-theme .data-table {
+  background: var(--panel);
+  border-radius: 14px;
+}
+
+.v4-theme .data-table-row {
+  border-bottom: 1px solid var(--line);
+}
+
+.v4-theme .data-table-row:hover {
+  background: var(--bg-soft);
+}
+
+.v4-theme .data-table-row:nth-child(even) {
+  background: transparent;
+}

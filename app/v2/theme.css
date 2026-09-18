@@ -1,0 +1,157 @@
+/*
+  V2 — "다크모드 금융 트레이딩 대시보드" (증권 HTS/터미널 스타일)
+  메인(main) globals.css를 건드리지 않고, .v2-theme로 감싼 영역 안에서만
+  디자인 토큰과 몇몇 하드코딩된 색상 셀렉터를 재정의한다.
+*/
+
+/* 루트 body 배경은 메인(다크)에 고정돼 있어, .container/.page의 바깥
+   패딩 영역이 메인 배경으로 비쳐 보인다. :has()로 이 라우트에서만 body
+   배경을 테마에 맞춰 덮어써서 테두리처럼 남는 색 불일치를 없앤다. */
+body:has(.v2-theme) {
+  background: #0a0e14;
+}
+
+.v2-theme {
+  --bg: #0a0e14;
+  --bg-soft: #0f141d;
+  --panel: #12161f;
+  --panel-soft: #161b26;
+  --line: #1f2530;
+  --line-strong: #2a3242;
+  --text: #e5e9f0;
+  --muted: #8a93a6;
+  --primary: #ffb020;
+  --primary-soft: rgba(255, 176, 32, 0.14);
+  --danger: #f04452;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --violet: #8b5cf6;
+  --shadow: none;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+}
+
+/* 숫자는 등폭(tabular) + 모노스페이스로 — HTS 특유의 표 정렬감 */
+.v2-theme .card-value,
+.v2-theme .data-right,
+.v2-theme .pill,
+.v2-theme .cell-metric-row,
+.v2-theme .attendance-status-badge {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 터미널 느낌: 그림자 대신 라인, 코너는 작게 */
+.v2-theme .panel,
+.v2-theme .metric-card,
+.v2-theme .list-item,
+.v2-theme .empty-state,
+.v2-theme .message-success,
+.v2-theme .message-error,
+.v2-theme .doc-highlight,
+.v2-theme .document-head {
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.v2-theme .button {
+  border-radius: 4px;
+}
+
+.v2-theme .page-badge {
+  background: var(--panel-soft);
+}
+
+.v2-theme .input,
+.v2-theme .select,
+.v2-theme .textarea {
+  background: var(--bg-soft);
+  border-radius: 4px;
+}
+
+.v2-theme .input:focus,
+.v2-theme .select:focus,
+.v2-theme .textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.v2-theme .label {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.v2-theme .metric-card,
+.v2-theme .document-head {
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.v2-theme .button.secondary {
+  background: var(--bg-soft);
+  color: var(--text);
+}
+
+.v2-theme .button.secondary.active {
+  border-color: var(--primary);
+}
+
+.v2-theme .list-item {
+  background: var(--panel);
+}
+
+.v2-theme .list-item.selected {
+  border-color: var(--primary);
+}
+
+.v2-theme .pill {
+  background: var(--bg-soft);
+}
+
+.v2-theme .sidebar-section {
+  background: var(--panel);
+}
+
+.v2-theme .sidebar-link.active {
+  border-color: var(--primary);
+}
+
+.v2-theme .doc-highlight {
+  border-color: var(--line-strong);
+  background: var(--panel-soft);
+  color: var(--text);
+}
+
+/* 상태 LED: 출근/정상 계열은 블루가 아니라 앰버 포인트를 살린 도트 배지로 */
+.v2-theme .attendance-status-present,
+.v2-theme .attendance-status-checkout {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+}
+
+.v2-theme .attendance-status-late {
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+}
+
+.v2-theme .attendance-status-early-leave {
+  background: rgba(240, 68, 82, 0.14);
+  color: #f87171;
+}
+
+.v2-theme .data-table {
+  background: var(--panel);
+  border-radius: 6px;
+}
+
+.v2-theme .data-table-row {
+  border-bottom: 1px solid var(--line);
+}
+
+.v2-theme .data-table-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
