@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { usePathname } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { authedFetchJson, getAccessToken } from '@/lib/session/authed-fetch'
 import { getKstYmd } from '@/lib/attendance/time'
@@ -11,7 +10,6 @@ import { VersionBadge } from '@/components/version-badge'
 type AttendanceStatus = 'not_started' | 'present' | 'late' | 'vacation' | 'early_leave' | 'review_needed'
 
 export function TopbarAttendanceControls({ version }: { version: string }) {
-  const pathname = usePathname()
   const [visible, setVisible] = useState(false)
   const [checkingIn, setCheckingIn] = useState(false)
   const [checkingOut, setCheckingOut] = useState(false)
@@ -48,16 +46,24 @@ export function TopbarAttendanceControls({ version }: { version: string }) {
     const supabase = createSupabaseBrowserClient()
     void loadAttendanceStatus()
 
+    // onAuthStateChange는 구독 직후 현재 세션으로 콜백을 한 번 더 부르는데
+    // (INITIAL_SESSION), 그 값은 바로 위의 loadAttendanceStatus() 호출과
+    // 똑같아서 /api/attendance/status가 매번 중복 호출됐다. 실제 로그인/
+    // 로그아웃/토큰 갱신 때만 다시 불러오면 된다.
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'INITIAL_SESSION') return
       void loadAttendanceStatus()
     })
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [pathname])
+    // 라우트가 바뀔 때마다 재구독+재조회할 이유가 없다(같은 사용자의 근태
+    // 상태는 페이지 이동과 무관하다) — 마운트 시 한 번만 구독한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!checkInAt || checkOutAt) return
