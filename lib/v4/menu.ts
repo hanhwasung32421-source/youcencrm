@@ -20,7 +20,8 @@ export const MENU_DEFINITIONS = [
   { key: 'admin_channels', label: '채널 현황 - 관리자', href: '/v4/admin/channels', audience: 'admin' },
   { key: 'admin_users', label: '직급관리 - 관리자', href: '/v4/admin/users', audience: 'admin' },
   { key: 'admin_attendance', label: '근태관리 - 관리자', href: '/v4/admin/attendance', audience: 'admin' },
-  { key: 'admin_menu_permissions', label: '메뉴권한 - 관리자', href: '/v4/admin/menu-permissions', audience: 'admin' }
+  { key: 'admin_menu_permissions', label: '메뉴권한 - 관리자', href: '/v4/admin/menu-permissions', audience: 'admin' },
+  { key: 'admin_youtube_accounts', label: '유튜브 계정 관리 - 관리자', href: '/v4/admin/youtube-accounts', audience: 'admin' }
 ] as const
 
 export type MenuKey = (typeof MENU_DEFINITIONS)[number]['key']
@@ -32,8 +33,8 @@ type PermissionRow = {
 }
 
 export const DEFAULT_ROLE_MENU_KEYS: Record<BuiltinRoleType, MenuKey[]> = {
-  super_admin: ['admin_dashboard', 'admin_channels', 'admin_users', 'admin_attendance', 'admin_menu_permissions'],
-  admin: ['admin_dashboard', 'admin_channels', 'admin_users', 'admin_attendance'],
+  super_admin: ['admin_dashboard', 'admin_channels', 'admin_users', 'admin_attendance', 'admin_menu_permissions', 'admin_youtube_accounts'],
+  admin: ['admin_dashboard', 'admin_channels', 'admin_users', 'admin_attendance', 'admin_youtube_accounts'],
   general_manager: ['creator_dashboard', 'creator_videos'],
   manager: ['creator_dashboard', 'creator_videos'],
   assistant_manager: ['creator_dashboard', 'creator_videos'],

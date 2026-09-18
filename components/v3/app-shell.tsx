@@ -57,7 +57,13 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
     me?.allowedMenuKeys && me.allowedMenuKeys.length > 0
       ? me.allowedMenuKeys
       : DEFAULT_ROLE_MENU_KEYS[(effectiveRoleType as keyof typeof DEFAULT_ROLE_MENU_KEYS) || 'staff'] || []
-  const navItems = MENU_DEFINITIONS.filter((menu) => allowedMenuKeys.includes(menu.key))
+  // admin_youtube_accounts는 v3 전용으로 새로 만든 메뉴라, 메인과 공유하는
+  // 백엔드(youtubeCRM_role_menu_permissions/기본 메뉴 매핑)는 이 키를 모른다.
+  // 관리자/총관리자에게는 역할 기반 메뉴 권한과 무관하게 항상 노출한다.
+  const isAdminRole = ['super_admin', 'admin'].includes(effectiveRoleType)
+  const navItems = MENU_DEFINITIONS.filter(
+    (menu) => allowedMenuKeys.includes(menu.key) || (menu.key === 'admin_youtube_accounts' && isAdminRole)
+  )
 
   return (
     <div className="workspace">

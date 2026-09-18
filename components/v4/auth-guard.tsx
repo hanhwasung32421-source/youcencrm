@@ -43,7 +43,11 @@ export function AuthGuard({
 
         const currentMenuKey = getMenuKeyByPath(pathname)
         const allowedMenuKeys = me.allowedMenuKeys || []
-        if (currentMenuKey && !allowedMenuKeys.includes(currentMenuKey)) {
+        // admin_youtube_accounts는 메인과 공유하는 메뉴 권한 백엔드가 모르는
+        // v4 전용 신규 메뉴라, requireAdmin 통과 여부(위에서 이미 확인)로만
+        // 판단하고 역할별 메뉴 허용 목록 체크는 건너뛴다.
+        const isMenuBypassed = currentMenuKey === 'admin_youtube_accounts'
+        if (currentMenuKey && !isMenuBypassed && !allowedMenuKeys.includes(currentMenuKey)) {
           router.replace(getFirstAllowedHref(allowedMenuKeys, me.roleType))
           return
         }
