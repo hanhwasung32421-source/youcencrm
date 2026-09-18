@@ -1,49 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
-import { DEFAULT_ROLE_MENU_KEYS, MENU_DEFINITIONS } from '@/lib/v3/menu'
-import { clearMeCache, fetchMe } from '@/lib/session/me-client'
-import { getAccessToken } from '@/lib/session/authed-fetch'
+import { clearMeCache } from '@/lib/session/me-client'
+import { getVisibleMenus, MENU_GROUPS } from '@/lib/v3/menu'
+import { useV3Me } from '@/components/v3/auth-guard'
 
-type Me = {
-  name: string
-  roleType: string
-  roleName?: string
-  allowedMenuKeys?: string[]
-}
-
-// 예전에는 페이지마다 <AuthGuard><AppShell title=...>를 따로 감쌌다. Next.js
-// App Router에서는 라우트가 바뀌어도 같은 layout.tsx에 걸린 컴포넌트는 다시
-// 마운트되지 않는데, 페이지 안에 있던 AppShell은 매 이동마다 새로 마운트되면서
-// 세션 확인(getSession)과 프로필 조회(/api/auth/me)를 또 거쳤다. 사이드바/계정
-// 영역만 담당하는 이 프레임을 app/admin/layout.tsx, app/creator/layout.tsx로
-// 옮겨서 같은 구역 안에서는 한 번만 마운트되게 한다.
+// 사이드바(페이지 트리) + 계정 영역. app/v3/(workspace)/layout.tsx에서 한 번만 마운트된다.
 export function AppShellFrame({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [me, setMe] = useState<Me | null>(null)
-
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const accessToken = await getAccessToken()
-        if (!accessToken) return
-
-        const data = await fetchMe(accessToken)
-        setMe({
-          name: data.name,
-          roleType: data.roleType,
-          roleName: data.roleName || data.roleType,
-          allowedMenuKeys: data.allowedMenuKeys || []
-        })
-      } catch {}
-    }
-
-    void run()
-  }, [])
+  const me = useV3Me()
 
   const logout = async () => {
     const supabase = createSupabaseBrowserClient()
@@ -52,52 +20,55 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
     router.replace('/v3/login')
   }
 
-  const effectiveRoleType = me?.roleType || (pathname.startsWith('/v3/admin') ? 'admin' : 'staff')
-  const allowedMenuKeys =
-    me?.allowedMenuKeys && me.allowedMenuKeys.length > 0
-      ? me.allowedMenuKeys
-      : DEFAULT_ROLE_MENU_KEYS[(effectiveRoleType as keyof typeof DEFAULT_ROLE_MENU_KEYS) || 'staff'] || []
-  // admin_youtube_accounts는 v3 전용으로 새로 만든 메뉴라, 메인과 공유하는
-  // 백엔드(youtubeCRM_role_menu_permissions/기본 메뉴 매핑)는 이 키를 모른다.
-  // 관리자/총관리자에게는 역할 기반 메뉴 권한과 무관하게 항상 노출한다.
-  const isAdminRole = ['super_admin', 'admin'].includes(effectiveRoleType)
-  const navItems = MENU_DEFINITIONS.filter(
-    (menu) => allowedMenuKeys.includes(menu.key) || (menu.key === 'admin_youtube_accounts' && isAdminRole)
-  )
+  const menus = getVisibleMenus(me?.roleType)
 
   return (
     <div className="workspace">
       <aside id="app-sidebar" className="sidebar">
         <div className="sidebar-section">
-          <div className="sidebar-caption">workspace</div>
-          <nav className="sidebar-nav" aria-label="주요 메뉴">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                className={`sidebar-link ${pathname === item.href ? 'active' : ''}`}
-                href={item.href}
-                aria-current={pathname === item.href ? 'page' : undefined}
-              >
-                <span>{item.label}</span>
-              </Link>
-            ))}
+          <div className="v3-sidebar-brand">
+            <span>💰</span>
+            <span>수익화 · 정산</span>
+          </div>
+          <nav aria-label="주요 메뉴">
+            {MENU_GROUPS.map((group) => {
+              const items = menus.filter((menu) => menu.group === group.key)
+              if (items.length === 0) return null
+              return (
+                <div className="v3-tree-group" key={group.key}>
+                  <div className="v3-tree-caption">
+                    <span>{group.icon}</span>
+                    <span>{group.label}</span>
+                  </div>
+                  {items.map((item) => {
+                    const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
+                    return (
+                      <Link
+                        key={item.key}
+                        className={`v3-tree-link ${active ? 'active' : ''}`}
+                        href={item.href}
+                        aria-current={active ? 'page' : undefined}
+                        title={item.description}
+                      >
+                        {item.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )
+            })}
           </nav>
-        </div>
 
-        <div className="sidebar-section">
-          <div className="sidebar-caption">account</div>
-          {me ? <div className="pill small">{me.name} · {me.roleName || me.roleType}</div> : null}
-          <div className="stack" style={{ marginTop: 12 }}>
+          <div className="v3-sidebar-account">
+            {me ? (
+              <div className="small">
+                <div style={{ fontWeight: 600 }}>{me.name}</div>
+                <div className="muted">{me.isAdmin ? '관리자' : '직원'} · {me.roleName}</div>
+              </div>
+            ) : null}
             <button className="button secondary" onClick={logout}>
               로그아웃
             </button>
-          </div>
-        </div>
-
-        <div className="sidebar-section">
-          <div className="sidebar-caption">note</div>
-          <div className="sidebar-note small">
-            문서 작업창처럼 정보 우선으로 정리된 화면입니다. 입력, 확인, 관리 흐름이 왼쪽 메뉴 기준으로 이어집니다.
           </div>
         </div>
       </aside>
@@ -107,20 +78,22 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
   )
 }
 
-// 페이지 제목/부제/작업공간 배지. AppShellFrame과 달리 페이지마다 내용이 달라서
-// layout이 아니라 각 page.tsx가 직접 렌더링한다.
-export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  const pathname = usePathname()
-  const isAdmin = pathname.startsWith('/v3/admin')
+// 문서 제목 영역. 페이지마다 아이콘/제목/부제가 다르므로 각 page.tsx가 직접 렌더링한다.
+export function PageHeader({ icon, title, subtitle, actions }: { icon?: string; title: string; subtitle?: string; actions?: React.ReactNode }) {
+  const me = useV3Me()
 
   return (
     <div className="document-head">
       <div className="document-head-top">
-        <div>
+        <div style={{ minWidth: 0 }}>
+          {icon ? <span className="v3-page-icon" aria-hidden>{icon}</span> : null}
           <h1 className="page-title">{title}</h1>
           {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
         </div>
-        <div className="page-badge">{isAdmin ? '관리자 작업 공간' : '유튜버 작업 공간'}</div>
+        <div className="row" style={{ flexShrink: 0 }}>
+          {actions}
+          <div className="page-badge">{me?.isAdmin ? '관리자 작업 공간' : '직원 작업 공간'}</div>
+        </div>
       </div>
     </div>
   )

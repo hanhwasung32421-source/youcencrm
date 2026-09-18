@@ -1,49 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
-import { DEFAULT_ROLE_MENU_KEYS, MENU_DEFINITIONS } from '@/lib/v2/menu'
-import { clearMeCache, fetchMe } from '@/lib/session/me-client'
-import { getAccessToken } from '@/lib/session/authed-fetch'
+import { clearMeCache } from '@/lib/session/me-client'
+import { getMenusForRole, groupMenus } from '@/lib/v2/menu'
+import { useV2Me } from './session-context'
 
-type Me = {
-  name: string
-  roleType: string
-  roleName?: string
-  allowedMenuKeys?: string[]
-}
-
-// 예전에는 페이지마다 <AuthGuard><AppShell title=...>를 따로 감쌌다. Next.js
-// App Router에서는 라우트가 바뀌어도 같은 layout.tsx에 걸린 컴포넌트는 다시
-// 마운트되지 않는데, 페이지 안에 있던 AppShell은 매 이동마다 새로 마운트되면서
-// 세션 확인(getSession)과 프로필 조회(/api/auth/me)를 또 거쳤다. 사이드바/계정
-// 영역만 담당하는 이 프레임을 app/admin/layout.tsx, app/creator/layout.tsx로
-// 옮겨서 같은 구역 안에서는 한 번만 마운트되게 한다.
+// V2 셸: HTS 터미널 느낌의 그룹형 사이드바. 세션은 AuthGuard가 컨텍스트로 넘겨준다.
 export function AppShellFrame({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [me, setMe] = useState<Me | null>(null)
+  const me = useV2Me()
 
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const accessToken = await getAccessToken()
-        if (!accessToken) return
-
-        const data = await fetchMe(accessToken)
-        setMe({
-          name: data.name,
-          roleType: data.roleType,
-          roleName: data.roleName || data.roleType,
-          allowedMenuKeys: data.allowedMenuKeys || []
-        })
-      } catch {}
-    }
-
-    void run()
-  }, [])
+  const groups = groupMenus(getMenusForRole(me.isAdmin))
+  let index = 0
 
   const logout = async () => {
     const supabase = createSupabaseBrowserClient()
@@ -52,52 +23,54 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
     router.replace('/v2/login')
   }
 
-  const effectiveRoleType = me?.roleType || (pathname.startsWith('/v2/admin') ? 'admin' : 'staff')
-  const allowedMenuKeys =
-    me?.allowedMenuKeys && me.allowedMenuKeys.length > 0
-      ? me.allowedMenuKeys
-      : DEFAULT_ROLE_MENU_KEYS[(effectiveRoleType as keyof typeof DEFAULT_ROLE_MENU_KEYS) || 'staff'] || []
-  // admin_youtube_accounts는 v2 전용으로 새로 만든 메뉴라, 메인과 공유하는
-  // 백엔드(youtubeCRM_role_menu_permissions/기본 메뉴 매핑)는 이 키를 모른다.
-  // 관리자/총관리자에게는 역할 기반 메뉴 권한과 무관하게 항상 노출한다.
-  const isAdminRole = ['super_admin', 'admin'].includes(effectiveRoleType)
-  const navItems = MENU_DEFINITIONS.filter(
-    (menu) => allowedMenuKeys.includes(menu.key) || (menu.key === 'admin_youtube_accounts' && isAdminRole)
-  )
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
 
   return (
     <div className="workspace">
       <aside id="app-sidebar" className="sidebar">
-        <div className="sidebar-section">
-          <div className="sidebar-caption">workspace</div>
-          <nav className="sidebar-nav" aria-label="주요 메뉴">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                className={`sidebar-link ${pathname === item.href ? 'active' : ''}`}
-                href={item.href}
-                aria-current={pathname === item.href ? 'page' : undefined}
-              >
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </nav>
+        <div className="sidebar-section v2-sidebar-brand">
+          <div className="v2-brand-line">Production Ops</div>
+          <div className="small muted" style={{ marginTop: 6 }}>
+            콘텐츠 제작 파이프라인 · V2
+          </div>
         </div>
+
+        {groups.map((group) => (
+          <div className="sidebar-section" key={group.group}>
+            <div className="sidebar-caption">{group.group}</div>
+            <nav className="sidebar-nav" aria-label={`${group.group} 메뉴`}>
+              {group.items.map((item) => {
+                index += 1
+                const active = isActive(item.href)
+                return (
+                  <Link
+                    key={item.href}
+                    className={`sidebar-link ${active ? 'active' : ''}`}
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    title={item.description}
+                  >
+                    <span>{item.label}</span>
+                    <span className="v2-nav-index">{String(index).padStart(2, '0')}</span>
+                  </Link>
+                )
+              })}
+            </nav>
+          </div>
+        ))}
 
         <div className="sidebar-section">
           <div className="sidebar-caption">account</div>
-          {me ? <div className="pill small">{me.name} · {me.roleName || me.roleType}</div> : null}
+          <div className="v2-account">
+            <div className="v2-account-name">{me.name || '-'}</div>
+            <div className="small muted">
+              {me.roleName || me.roleType} · {me.isAdmin ? '관리자' : '직원'}
+            </div>
+          </div>
           <div className="stack" style={{ marginTop: 12 }}>
             <button className="button secondary" onClick={logout}>
               로그아웃
             </button>
-          </div>
-        </div>
-
-        <div className="sidebar-section">
-          <div className="sidebar-caption">note</div>
-          <div className="sidebar-note small">
-            문서 작업창처럼 정보 우선으로 정리된 화면입니다. 입력, 확인, 관리 흐름이 왼쪽 메뉴 기준으로 이어집니다.
           </div>
         </div>
       </aside>
@@ -107,11 +80,9 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
   )
 }
 
-// 페이지 제목/부제/작업공간 배지. AppShellFrame과 달리 페이지마다 내용이 달라서
-// layout이 아니라 각 page.tsx가 직접 렌더링한다.
-export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  const pathname = usePathname()
-  const isAdmin = pathname.startsWith('/v2/admin')
+// 페이지 제목/부제. 오른쪽에 역할 배지와(선택) 페이지 액션을 둔다.
+export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: React.ReactNode }) {
+  const me = useV2Me()
 
   return (
     <div className="document-head">
@@ -120,7 +91,10 @@ export function PageHeader({ title, subtitle }: { title: string; subtitle?: stri
           <h1 className="page-title">{title}</h1>
           {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
         </div>
-        <div className="page-badge">{isAdmin ? '관리자 작업 공간' : '유튜버 작업 공간'}</div>
+        <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {actions}
+          <div className="page-badge">{me.isAdmin ? '관리자 · 운영 콘솔' : '직원 · 제작 콘솔'}</div>
+        </div>
       </div>
     </div>
   )

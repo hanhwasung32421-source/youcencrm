@@ -1,73 +1,83 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { getAccessToken } from '@/lib/session/authed-fetch'
-import { getFirstAllowedHref, getMenuKeyByPath } from '@/lib/v2/menu'
 import { fetchMe } from '@/lib/session/me-client'
+import { isAdminRoleType, V2_HOME_HREF } from '@/lib/v2/menu'
+import { V2SessionProvider, useV2Me, type V2Me } from './session-context'
 
-export function AuthGuard({
-  children,
-  requireAdmin = false
-}: {
-  children: React.ReactNode
-  requireAdmin?: boolean
-}) {
+// V2는 메뉴 권한 테이블을 쓰지 않는다. 역할(roleType)만으로 관리자/직원을 가른다.
+// 로그인 안 됨 → /v2/login, 관리자 전용 화면에 직원 접근 → 제작 보드.
+export function AuthGuard({ children, requireAdmin = false }: { children: React.ReactNode; requireAdmin?: boolean }) {
   const router = useRouter()
-  const pathname = usePathname()
-  const [ready, setReady] = useState(false)
+  const [me, setMe] = useState<V2Me | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
+    let cancelled = false
     const run = async () => {
       try {
         const accessToken = await getAccessToken()
-
         if (!accessToken) {
           router.replace('/v2/login')
           return
         }
 
-        let me: { roleType: string; allowedMenuKeys?: string[] }
+        let data: Awaited<ReturnType<typeof fetchMe>>
         try {
-          me = await fetchMe(accessToken)
+          data = await fetchMe(accessToken)
         } catch {
           router.replace('/v2/login')
           return
         }
 
-        if (requireAdmin && !['super_admin', 'admin'].includes(me.roleType)) {
-          router.replace('/v2/creator/dashboard')
+        const isAdmin = isAdminRoleType(data.roleType)
+        if (requireAdmin && !isAdmin) {
+          router.replace(V2_HOME_HREF)
           return
         }
 
-        const currentMenuKey = getMenuKeyByPath(pathname)
-        const allowedMenuKeys = me.allowedMenuKeys || []
-        // admin_youtube_accounts는 메인과 공유하는 메뉴 권한 백엔드가 모르는
-        // v2 전용 신규 메뉴라, requireAdmin 통과 여부(위에서 이미 확인)로만
-        // 판단하고 역할별 메뉴 허용 목록 체크는 건너뛴다.
-        const isMenuBypassed = currentMenuKey === 'admin_youtube_accounts'
-        if (currentMenuKey && !isMenuBypassed && !allowedMenuKeys.includes(currentMenuKey)) {
-          router.replace(getFirstAllowedHref(allowedMenuKeys, me.roleType))
-          return
+        if (!cancelled) {
+          setMe({
+            crmUserId: data.crmUserId,
+            name: data.name,
+            roleType: data.roleType,
+            roleName: data.roleName || data.roleType,
+            isAdmin
+          })
         }
-
-        setReady(true)
-      } catch (e: any) {
-        setError(e?.message || '인증 확인 중 오류가 발생했습니다.')
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : '인증 확인 중 오류가 발생했습니다.')
       }
     }
 
     void run()
-  }, [pathname, requireAdmin, router])
+    return () => {
+      cancelled = true
+    }
+  }, [requireAdmin, router])
 
   if (error) {
     return <div className="message-error">{error}</div>
   }
 
-  if (!ready) {
+  if (!me) {
     return null
   }
 
+  return <V2SessionProvider me={me}>{children}</V2SessionProvider>
+}
+
+// 관리자 전용 페이지 본문을 감싼다. 직원이면 제작 보드로 돌려보낸다.
+export function AdminOnly({ children }: { children: React.ReactNode }) {
+  const me = useV2Me()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (me.crmUserId && !me.isAdmin) router.replace(V2_HOME_HREF)
+  }, [me.crmUserId, me.isAdmin, router])
+
+  if (!me.isAdmin) return null
   return <>{children}</>
 }

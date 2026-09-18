@@ -3,71 +3,67 @@
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { getAccessToken } from '@/lib/session/authed-fetch'
-import { getFirstAllowedHref, getMenuKeyByPath } from '@/lib/v4/menu'
 import { fetchMe } from '@/lib/session/me-client'
+import { HOME_HREF, LOGIN_HREF, findMenuByPath, isAdminRole } from '@/lib/v4/menu'
+import { V4MeProvider, type V4Me } from '@/components/v4/me-context'
 
-export function AuthGuard({
-  children,
-  requireAdmin = false
-}: {
-  children: React.ReactNode
-  requireAdmin?: boolean
-}) {
+// 역할(role_type)만으로 접근을 판단한다. 공용 백엔드의 메뉴 권한(allowedMenuKeys)은
+// 옛 메뉴 키만 알고 있으므로 V4에서는 전혀 참조하지 않는다.
+export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [ready, setReady] = useState(false)
+  const [me, setMe] = useState<V4Me | null>(null)
+  const [allowed, setAllowed] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
+    let cancelled = false
     const run = async () => {
       try {
         const accessToken = await getAccessToken()
-
         if (!accessToken) {
-          router.replace('/v4/login')
+          router.replace(LOGIN_HREF)
           return
         }
-
-        let me: { roleType: string; allowedMenuKeys?: string[] }
+        let data: Awaited<ReturnType<typeof fetchMe>>
         try {
-          me = await fetchMe(accessToken)
+          data = await fetchMe(accessToken)
         } catch {
-          router.replace('/v4/login')
+          router.replace(LOGIN_HREF)
+          return
+        }
+        if (cancelled) return
+
+        const menu = findMenuByPath(pathname)
+        const admin = isAdminRole(data.roleType)
+        if (menu && menu.audience === 'admin' && !admin) {
+          router.replace(HOME_HREF)
+          return
+        }
+        if (menu && menu.audience === 'staff' && admin) {
+          router.replace(HOME_HREF)
           return
         }
 
-        if (requireAdmin && !['super_admin', 'admin'].includes(me.roleType)) {
-          router.replace('/v4/creator/dashboard')
-          return
-        }
-
-        const currentMenuKey = getMenuKeyByPath(pathname)
-        const allowedMenuKeys = me.allowedMenuKeys || []
-        // admin_youtube_accounts는 메인과 공유하는 메뉴 권한 백엔드가 모르는
-        // v4 전용 신규 메뉴라, requireAdmin 통과 여부(위에서 이미 확인)로만
-        // 판단하고 역할별 메뉴 허용 목록 체크는 건너뛴다.
-        const isMenuBypassed = currentMenuKey === 'admin_youtube_accounts'
-        if (currentMenuKey && !isMenuBypassed && !allowedMenuKeys.includes(currentMenuKey)) {
-          router.replace(getFirstAllowedHref(allowedMenuKeys, me.roleType))
-          return
-        }
-
-        setReady(true)
+        setMe({ crmUserId: data.crmUserId, name: data.name, roleType: data.roleType, roleName: data.roleName || data.roleType })
+        setAllowed(true)
       } catch (e: any) {
-        setError(e?.message || '인증 확인 중 오류가 발생했습니다.')
+        if (!cancelled) setError(e?.message || '인증 확인 중 오류가 발생했습니다.')
       }
     }
-
     void run()
-  }, [pathname, requireAdmin, router])
+    return () => {
+      cancelled = true
+    }
+  }, [pathname, router])
 
   if (error) {
     return <div className="message-error">{error}</div>
   }
 
-  if (!ready) {
+  if (!allowed || !me) {
     return null
   }
 
-  return <>{children}</>
+  return <V4MeProvider value={me}>{children}</V4MeProvider>
 }

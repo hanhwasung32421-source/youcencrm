@@ -1,129 +1,99 @@
-import { TABLES } from '@/lib/supabase/tables'
+// V5 파트너 · 협찬 딜 · 컴플라이언스 CRM 메뉴.
+// 메뉴 권한은 DB(youtubeCRM_role_menu_permissions)를 보지 않고 역할(role_type)만으로 판단한다.
+// super_admin/admin = 관리자, 그 외 = 직원.
 
-export const BUILTIN_ROLE_TYPES = [
-  'super_admin',
-  'admin',
-  'general_manager',
-  'manager',
-  'assistant_manager',
-  'senior_staff',
-  'staff',
-  'retired'
+export type MenuAudience = 'admin' | 'staff' | 'all'
+
+export type MenuDefinition = {
+  key: string
+  label: string
+  href: string
+  audience: MenuAudience
+  group: string
+  icon: string
+  description: string
+}
+
+export const MENU_DEFINITIONS: readonly MenuDefinition[] = [
+  {
+    key: 'dashboard',
+    label: '파트너 대시보드',
+    href: '/v5/dashboard',
+    audience: 'admin',
+    group: '개요',
+    icon: '◧',
+    description: '파트너·딜·계약·컴플라이언스 현황을 위젯으로 한눈에'
+  },
+  {
+    key: 'partners',
+    label: '파트너 · 광고주',
+    href: '/v5/partners',
+    audience: 'admin',
+    group: '파트너 관계',
+    icon: '◎',
+    description: '광고주 · 증권사 · PR대행사 · 플랫폼 파트너 관리'
+  },
+  {
+    key: 'deals',
+    label: '딜 파이프라인',
+    href: '/v5/deals',
+    audience: 'admin',
+    group: '파트너 관계',
+    icon: '⇶',
+    description: '리드부터 집행 완료까지 협찬 딜 단계 관리'
+  },
+  {
+    key: 'contracts',
+    label: '계약 · 일정',
+    href: '/v5/contracts',
+    audience: 'admin',
+    group: '파트너 관계',
+    icon: '▤',
+    description: '계약 금액 · 기간 · 산출물 · 만료 일정'
+  },
+  {
+    key: 'activities',
+    label: '커뮤니케이션 로그',
+    href: '/v5/activities',
+    audience: 'all',
+    group: '기록',
+    icon: '✎',
+    description: '미팅 · 통화 · 이메일 · 메신저 · 메모 기록'
+  },
+  {
+    key: 'compliance',
+    label: '컴플라이언스 체크',
+    href: '/v5/compliance',
+    audience: 'all',
+    group: '리스크',
+    icon: '✓',
+    description: '영상별 고지/면책 체크리스트와 리스크 이슈'
+  }
 ] as const
 
-export type BuiltinRoleType = (typeof BUILTIN_ROLE_TYPES)[number]
+export const ADMIN_HOME_HREF = '/v5/dashboard'
+export const STAFF_HOME_HREF = '/v5/compliance'
 
-export const MENU_DEFINITIONS = [
-  { key: 'creator_dashboard', label: '대시보드', href: '/v5/creator/dashboard', audience: 'creator' },
-  { key: 'creator_videos', label: '영상등록', href: '/v5/creator/videos', audience: 'creator' },
-  { key: 'admin_dashboard', label: '대시보드 - 관리자', href: '/v5/admin/dashboard', audience: 'admin' },
-  { key: 'admin_channels', label: '채널 현황 - 관리자', href: '/v5/admin/channels', audience: 'admin' },
-  { key: 'admin_users', label: '직급관리 - 관리자', href: '/v5/admin/users', audience: 'admin' },
-  { key: 'admin_attendance', label: '근태관리 - 관리자', href: '/v5/admin/attendance', audience: 'admin' },
-  { key: 'admin_menu_permissions', label: '메뉴권한 - 관리자', href: '/v5/admin/menu-permissions', audience: 'admin' },
-  { key: 'admin_youtube_accounts', label: '유튜브 계정 관리 - 관리자', href: '/v5/admin/youtube-accounts', audience: 'admin' }
-] as const
-
-export type MenuKey = (typeof MENU_DEFINITIONS)[number]['key']
-
-type PermissionRow = {
-  role_type: string
-  menu_key: MenuKey
-  can_view: boolean
+export function isAdminRoleType(roleType: string | null | undefined) {
+  return roleType === 'super_admin' || roleType === 'admin'
 }
 
-export const DEFAULT_ROLE_MENU_KEYS: Record<BuiltinRoleType, MenuKey[]> = {
-  super_admin: ['admin_dashboard', 'admin_channels', 'admin_users', 'admin_attendance', 'admin_menu_permissions', 'admin_youtube_accounts'],
-  admin: ['admin_dashboard', 'admin_channels', 'admin_users', 'admin_attendance', 'admin_youtube_accounts'],
-  general_manager: ['creator_dashboard', 'creator_videos'],
-  manager: ['creator_dashboard', 'creator_videos'],
-  assistant_manager: ['creator_dashboard', 'creator_videos'],
-  senior_staff: ['creator_dashboard', 'creator_videos'],
-  staff: ['creator_dashboard', 'creator_videos'],
-  retired: []
+export function getHomeHref(roleType: string | null | undefined) {
+  return isAdminRoleType(roleType) ? ADMIN_HOME_HREF : STAFF_HOME_HREF
 }
 
-export function isBuiltinRoleType(value: string): value is BuiltinRoleType {
-  return BUILTIN_ROLE_TYPES.includes(value as BuiltinRoleType)
+export function getMenusForRole(roleType: string | null | undefined) {
+  const admin = isAdminRoleType(roleType)
+  return MENU_DEFINITIONS.filter((menu) => menu.audience === 'all' || (admin ? menu.audience === 'admin' : menu.audience === 'staff'))
 }
 
-export function getDefaultRoleMenuMap(): Record<string, MenuKey[]> {
-  return {
-    super_admin: [...DEFAULT_ROLE_MENU_KEYS.super_admin],
-    admin: [...DEFAULT_ROLE_MENU_KEYS.admin],
-    general_manager: [...DEFAULT_ROLE_MENU_KEYS.general_manager],
-    manager: [...DEFAULT_ROLE_MENU_KEYS.manager],
-    assistant_manager: [...DEFAULT_ROLE_MENU_KEYS.assistant_manager],
-    senior_staff: [...DEFAULT_ROLE_MENU_KEYS.senior_staff],
-    staff: [...DEFAULT_ROLE_MENU_KEYS.staff],
-    retired: [...DEFAULT_ROLE_MENU_KEYS.retired]
-  }
+export function findMenuByPath(pathname: string) {
+  return MENU_DEFINITIONS.find((menu) => pathname === menu.href || pathname.startsWith(`${menu.href}/`)) || null
 }
 
-export async function loadRoleMenuMap(supabaseAdmin: any): Promise<Record<string, MenuKey[]>> {
-  const defaults = getDefaultRoleMenuMap()
-  const [{ data: roles }, { data, error }] = await Promise.all([
-    supabaseAdmin.from(TABLES.roles).select('code').order('created_at', { ascending: true }),
-    supabaseAdmin.from(TABLES.roleMenuPermissions).select('role_type, menu_key, can_view')
-  ])
-
-  if (error || !data) {
-    return defaults
-  }
-
-  const rows = data as PermissionRow[]
-  const next: Record<string, MenuKey[]> = {}
-  for (const role of roles || []) {
-    next[role.code] = []
-  }
-  for (const roleCode of Object.keys(defaults)) {
-    if (!next[roleCode]) next[roleCode] = []
-  }
-
-  // DB에 저장된 적이 한 번도 없는 menu_key는 "새로 배포된 메뉴"로 간주한다. 이미 커스터마이징된
-  // 역할이라도 신규 메뉴만큼은 기본값으로 보충해서, 관리자가 메뉴권한 화면에서 직접 켜주기 전까지
-  // 화면 자체가 통째로 사라지는 일이 없게 한다.
-  const configuredMenuKeys = new Set(rows.map((row) => row.menu_key))
-
-  for (const row of rows) {
-    if (!row.can_view) continue
-    if (!MENU_DEFINITIONS.some((menu) => menu.key === row.menu_key)) continue
-    if (!next[row.role_type]) next[row.role_type] = []
-    next[row.role_type].push(row.menu_key)
-  }
-
-  for (const role of Object.keys(defaults)) {
-    if (next[role].length === 0 && defaults[role].length > 0) {
-      next[role] = [...defaults[role]]
-      continue
-    }
-    for (const key of defaults[role]) {
-      if (!configuredMenuKeys.has(key) && !next[role].includes(key)) {
-        next[role].push(key)
-      }
-    }
-  }
-
-  return next
-}
-
-export async function getAllowedMenuKeysForRole(supabaseAdmin: any, roleType: string): Promise<MenuKey[]> {
-  const map = await loadRoleMenuMap(supabaseAdmin)
-  return map[roleType] || []
-}
-
-export function getMenuDefinition(key: string) {
-  return MENU_DEFINITIONS.find((menu) => menu.key === key)
-}
-
-export function getMenuKeyByPath(pathname: string): MenuKey | null {
-  const match = MENU_DEFINITIONS.find((menu) => pathname === menu.href || pathname.startsWith(`${menu.href}/`))
-  return match?.key || null
-}
-
-export function getFirstAllowedHref(menuKeys: string[], fallbackRoleType?: string) {
-  const first = MENU_DEFINITIONS.find((menu) => menuKeys.includes(menu.key))
-  if (first) return first.href
-  if (fallbackRoleType && ['super_admin', 'admin'].includes(fallbackRoleType)) return '/v5/admin/dashboard'
-  return '/v5/creator/dashboard'
+export function canAccessPath(pathname: string, roleType: string | null | undefined) {
+  const menu = findMenuByPath(pathname)
+  if (!menu) return true
+  if (menu.audience === 'all') return true
+  return menu.audience === 'admin' ? isAdminRoleType(roleType) : !isAdminRoleType(roleType)
 }

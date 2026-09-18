@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { fetchMe } from '@/lib/session/me-client'
+import { getHomeHref } from '@/lib/v3/menu'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -53,11 +54,7 @@ export default function LoginPage() {
       })
 
       const me = await fetchMe(data.session.access_token)
-      if (['super_admin', 'admin'].includes(me.roleType)) {
-        router.push('/v3/admin/dashboard')
-      } else {
-        router.push('/v3/creator/dashboard')
-      }
+      router.push(getHomeHref(me.roleType))
     } catch (e: any) {
       setError(e?.message || '로그인 중 오류가 발생했습니다.')
     } finally {
@@ -71,7 +68,7 @@ export default function LoginPage() {
         <div className="panel form-stack" style={{ width: '100%', maxWidth: 520 }}>
           <img className="auth-logo" src="/logo-ant.png" alt="" width={56} height={56} />
           <h1 className="auth-title">여왕개미미디어 CRM</h1>
-          <p className="auth-subtitle">DB통계 CRM</p>
+          <p className="auth-subtitle">수익화 · 정산 CRM</p>
           <div className="field">
             <label className="label">아이디</label>
             <input

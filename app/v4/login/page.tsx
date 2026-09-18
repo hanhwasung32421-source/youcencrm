@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { fetchMe } from '@/lib/session/me-client'
+import { HOME_HREF } from '@/lib/v4/menu'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -52,12 +53,9 @@ export default function LoginPage() {
         headers: { Authorization: `Bearer ${data.session.access_token}` }
       })
 
-      const me = await fetchMe(data.session.access_token)
-      if (['super_admin', 'admin'].includes(me.roleType)) {
-        router.push('/v4/admin/dashboard')
-      } else {
-        router.push('/v4/creator/dashboard')
-      }
+      // 역할과 무관하게 성장 대시보드가 홈. 관리자/직원 범위는 대시보드가 알아서 나눈다.
+      await fetchMe(data.session.access_token)
+      router.push(HOME_HREF)
     } catch (e: any) {
       setError(e?.message || '로그인 중 오류가 발생했습니다.')
     } finally {
@@ -71,7 +69,7 @@ export default function LoginPage() {
         <div className="panel form-stack" style={{ width: '100%', maxWidth: 520 }}>
           <img className="auth-logo" src="/logo-ant.png" alt="" width={56} height={56} />
           <h1 className="auth-title">여왕개미미디어 CRM</h1>
-          <p className="auth-subtitle">DB통계 CRM</p>
+          <p className="auth-subtitle">성장 · 성과 분석 CRM (V4)</p>
           <div className="field">
             <label className="label">아이디</label>
             <input

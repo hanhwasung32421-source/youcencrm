@@ -1,73 +1,84 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { getAccessToken } from '@/lib/session/authed-fetch'
-import { getFirstAllowedHref, getMenuKeyByPath } from '@/lib/v3/menu'
 import { fetchMe } from '@/lib/session/me-client'
+import { getHomeHref, getMenuByPath, isAdminRole } from '@/lib/v3/menu'
 
-export function AuthGuard({
-  children,
-  requireAdmin = false
-}: {
-  children: React.ReactNode
-  requireAdmin?: boolean
-}) {
+export type V3Me = {
+  crmUserId: string
+  name: string
+  roleType: string
+  roleName: string
+  isAdmin: boolean
+}
+
+const V3SessionContext = createContext<V3Me | null>(null)
+
+export function useV3Me() {
+  return useContext(V3SessionContext)
+}
+
+// 역할(roleType)만으로 접근을 판단한다. super_admin/admin = 관리자, 그 외 = 직원.
+// 관리자 전용 메뉴에 직원이 들어오면 직원 홈(/v3/my-settlement)으로 돌려보낸다.
+export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [ready, setReady] = useState(false)
+  const [me, setMe] = useState<V3Me | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
+    let cancelled = false
     const run = async () => {
       try {
         const accessToken = await getAccessToken()
-
         if (!accessToken) {
           router.replace('/v3/login')
           return
         }
 
-        let me: { roleType: string; allowedMenuKeys?: string[] }
+        let profile: Awaited<ReturnType<typeof fetchMe>>
         try {
-          me = await fetchMe(accessToken)
+          profile = await fetchMe(accessToken)
         } catch {
           router.replace('/v3/login')
           return
         }
+        if (cancelled) return
 
-        if (requireAdmin && !['super_admin', 'admin'].includes(me.roleType)) {
-          router.replace('/v3/creator/dashboard')
+        const isAdmin = isAdminRole(profile.roleType)
+        const menu = getMenuByPath(pathname)
+        if (menu && menu.audience === 'admin' && !isAdmin) {
+          router.replace(getHomeHref(profile.roleType))
           return
         }
 
-        const currentMenuKey = getMenuKeyByPath(pathname)
-        const allowedMenuKeys = me.allowedMenuKeys || []
-        // admin_youtube_accounts는 메인과 공유하는 메뉴 권한 백엔드가 모르는
-        // v3 전용 신규 메뉴라, requireAdmin 통과 여부(위에서 이미 확인)로만
-        // 판단하고 역할별 메뉴 허용 목록 체크는 건너뛴다.
-        const isMenuBypassed = currentMenuKey === 'admin_youtube_accounts'
-        if (currentMenuKey && !isMenuBypassed && !allowedMenuKeys.includes(currentMenuKey)) {
-          router.replace(getFirstAllowedHref(allowedMenuKeys, me.roleType))
-          return
-        }
-
-        setReady(true)
+        setMe({
+          crmUserId: profile.crmUserId,
+          name: profile.name,
+          roleType: profile.roleType,
+          roleName: profile.roleName || profile.roleType,
+          isAdmin
+        })
       } catch (e: any) {
-        setError(e?.message || '인증 확인 중 오류가 발생했습니다.')
+        if (!cancelled) setError(e?.message || '인증 확인 중 오류가 발생했습니다.')
       }
     }
 
     void run()
-  }, [pathname, requireAdmin, router])
+    return () => {
+      cancelled = true
+    }
+  }, [pathname, router])
 
   if (error) {
     return <div className="message-error">{error}</div>
   }
 
-  if (!ready) {
+  if (!me) {
     return null
   }
 
-  return <>{children}</>
+  return <V3SessionContext.Provider value={me}>{children}</V3SessionContext.Provider>
 }

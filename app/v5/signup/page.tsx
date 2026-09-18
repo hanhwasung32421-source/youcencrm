@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { fetchMe } from '@/lib/session/me-client'
+import { getHomeHref } from '@/lib/v5/menu'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -144,7 +145,7 @@ export default function SignupPage() {
       }
 
       setMessage('회원가입이 완료되어 자동 로그인됩니다.')
-      router.push(['super_admin', 'admin'].includes(me.roleType) ? '/v5/admin/dashboard' : '/v5/creator/dashboard')
+      router.push(getHomeHref(me.roleType))
     } catch (e: any) {
       setError(e?.message || '회원가입 중 오류가 발생했습니다.')
       await refresh()

@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import { fetchMe } from '@/lib/session/me-client'
+import { V2_HOME_HREF } from '@/lib/v2/menu'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -52,12 +53,9 @@ export default function LoginPage() {
         headers: { Authorization: `Bearer ${data.session.access_token}` }
       })
 
-      const me = await fetchMe(data.session.access_token)
-      if (['super_admin', 'admin'].includes(me.roleType)) {
-        router.push('/v2/admin/dashboard')
-      } else {
-        router.push('/v2/creator/dashboard')
-      }
+      // 관리자/직원 모두 제작 보드에서 시작한다(보드가 역할에 맞게 범위를 좁힌다).
+      await fetchMe(data.session.access_token)
+      router.push(V2_HOME_HREF)
     } catch (e: any) {
       setError(e?.message || '로그인 중 오류가 발생했습니다.')
     } finally {
@@ -71,7 +69,7 @@ export default function LoginPage() {
         <div className="panel form-stack" style={{ width: '100%', maxWidth: 520 }}>
           <img className="auth-logo" src="/logo-ant.png" alt="" width={56} height={56} />
           <h1 className="auth-title">여왕개미미디어 CRM</h1>
-          <p className="auth-subtitle">DB통계 CRM</p>
+          <p className="auth-subtitle">콘텐츠 제작 파이프라인 · Production Ops</p>
           <div className="field">
             <label className="label">아이디</label>
             <input

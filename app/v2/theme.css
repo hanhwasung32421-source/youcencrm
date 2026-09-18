@@ -155,3 +155,712 @@ body:has(.v2-theme) {
 .v2-theme .data-table-row:nth-child(even) {
   background: rgba(255, 255, 255, 0.015);
 }
+
+/* =====================================================================
+   V2 Production Ops — 제작 파이프라인 전용 컴포넌트 (모두 .v2-theme 스코프)
+   ===================================================================== */
+
+.v2-theme .v2-mono {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 샘플 데이터 안내 띠 */
+.v2-theme .v2-sample-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 176, 32, 0.55);
+  border-radius: 4px;
+  background: rgba(255, 176, 32, 0.1);
+  color: #ffd27a;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+.v2-theme .v2-sample-banner::before {
+  content: 'SAMPLE';
+  flex: none;
+  padding: 2px 6px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+/* 사이드바: 터미널 패널 느낌 */
+.v2-theme .sidebar-section {
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.v2-theme .v2-sidebar-brand {
+  border-color: var(--line-strong);
+}
+
+.v2-theme .v2-brand-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.v2-theme .v2-brand-line::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--success);
+}
+
+.v2-theme .sidebar-caption {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.v2-theme .sidebar-link {
+  border-radius: 4px;
+  border-left: 2px solid transparent;
+  padding: 9px 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.v2-theme .sidebar-link:hover {
+  background: var(--panel-soft);
+  border-color: var(--line);
+  border-left-color: var(--line-strong);
+}
+
+.v2-theme .sidebar-link.active {
+  background: var(--primary-soft);
+  border-color: transparent;
+  border-left-color: var(--primary);
+  color: var(--primary);
+}
+
+.v2-theme .v2-nav-index {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.v2-theme .sidebar-link.active .v2-nav-index {
+  color: var(--primary);
+}
+
+.v2-theme .v2-account-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.v2-theme .document-head {
+  border-radius: 6px;
+  padding: 20px 24px;
+  background: var(--panel);
+}
+
+.v2-theme .page-title {
+  font-size: 24px;
+}
+
+.v2-theme .page-badge {
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.v2-theme .v2-section-title {
+  margin: 0 0 8px;
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* KPI 스트립 */
+.v2-theme .v2-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.v2-theme .v2-kpi {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  padding: 14px 16px;
+  min-width: 0;
+}
+
+.v2-theme .v2-kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.v2-theme .v2-kpi-value {
+  margin-top: 6px;
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.v2-theme .v2-kpi-value .unit {
+  margin-left: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.v2-theme .v2-kpi.good .v2-kpi-value {
+  color: #4ade80;
+}
+
+.v2-theme .v2-kpi.warn .v2-kpi-value {
+  color: #fbbf24;
+}
+
+.v2-theme .v2-kpi.bad .v2-kpi-value {
+  color: #f87171;
+}
+
+.v2-theme .v2-kpi-meta {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* 담당자별 진행률 미니 바 */
+.v2-theme .v2-minibars {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px 18px;
+}
+
+.v2-theme .v2-minibar-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 52px;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.v2-theme .v2-minibar-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-theme .v2-minibar-track {
+  height: 8px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+
+.v2-theme .v2-minibar-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.2s ease;
+}
+
+.v2-theme .v2-minibar-fill.full {
+  background: var(--success);
+}
+
+.v2-theme .v2-minibar-fill.low {
+  background: var(--danger);
+}
+
+.v2-theme .v2-minibar-value {
+  text-align: right;
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 칸반 */
+.v2-theme .v2-kanban {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.v2-theme .v2-kanban-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 320px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-soft);
+}
+
+.v2-theme .v2-kanban-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 2px solid var(--line-strong);
+  border-bottom: 1px solid var(--line);
+  border-radius: 6px 6px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.v2-theme .v2-kanban-head .count {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  color: var(--muted);
+}
+
+.v2-theme .v2-kanban-col[data-stage='planning'] .v2-kanban-head { border-top-color: #6b7280; }
+.v2-theme .v2-kanban-col[data-stage='shooting'] .v2-kanban-head { border-top-color: #3b82f6; }
+.v2-theme .v2-kanban-col[data-stage='editing'] .v2-kanban-head { border-top-color: #8b5cf6; }
+.v2-theme .v2-kanban-col[data-stage='ready'] .v2-kanban-head { border-top-color: #ffb020; }
+.v2-theme .v2-kanban-col[data-stage='done'] .v2-kanban-head { border-top-color: #22c55e; }
+
+.v2-theme .v2-kanban-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.v2-theme .v2-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--panel);
+  font-size: 13px;
+}
+
+.v2-theme .v2-card.prio-high { border-left-color: var(--warning); }
+.v2-theme .v2-card.prio-urgent { border-left-color: var(--danger); }
+.v2-theme .v2-card.late { outline: 1px dashed rgba(240, 68, 82, 0.55); outline-offset: -1px; }
+.v2-theme .v2-card.done { opacity: 0.85; }
+
+.v2-theme .v2-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.v2-theme .v2-card-issue {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.v2-theme .v2-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.v2-theme .v2-card-meta .hot {
+  color: #f87171;
+}
+
+.v2-theme .v2-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.v2-theme .v2-card-note {
+  padding: 6px 8px;
+  border-left: 2px solid var(--line-strong);
+  background: var(--bg-soft);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.v2-theme .v2-card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--bg-soft);
+}
+
+/* 작은 버튼/입력 */
+.v2-theme .button.xs {
+  padding: 5px 9px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 0;
+}
+
+.v2-theme .button.xs:hover {
+  transform: none;
+}
+
+.v2-theme .input.compact,
+.v2-theme .select.compact,
+.v2-theme .textarea.compact {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.v2-theme .textarea.compact {
+  min-height: 68px;
+}
+
+.v2-theme .v2-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.v2-theme .v2-form-grid .field {
+  gap: 5px;
+}
+
+/* 태그 */
+.v2-theme .v2-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  background: var(--bg-soft);
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.v2-theme .v2-tag.stage-planning { color: #9ca3af; border-color: #4b5563; }
+.v2-theme .v2-tag.stage-shooting { color: #60a5fa; border-color: rgba(96, 165, 250, 0.45); }
+.v2-theme .v2-tag.stage-editing { color: #a78bfa; border-color: rgba(167, 139, 250, 0.45); }
+.v2-theme .v2-tag.stage-ready { color: #fbbf24; border-color: rgba(251, 191, 36, 0.5); }
+.v2-theme .v2-tag.stage-done { color: #4ade80; border-color: rgba(74, 222, 128, 0.45); }
+
+.v2-theme .v2-tag.prio-low { color: var(--muted); }
+.v2-theme .v2-tag.prio-normal { color: var(--text); }
+.v2-theme .v2-tag.prio-high { color: #fbbf24; border-color: rgba(251, 191, 36, 0.5); }
+.v2-theme .v2-tag.prio-urgent { color: #f87171; border-color: rgba(248, 113, 113, 0.55); background: rgba(240, 68, 82, 0.1); }
+
+.v2-theme .v2-tag.type-longform { color: #60a5fa; }
+.v2-theme .v2-tag.type-shortform { color: #f472b6; }
+
+.v2-theme .v2-tag.topic-waiting { color: #9ca3af; }
+.v2-theme .v2-tag.topic-assigned { color: #60a5fa; border-color: rgba(96, 165, 250, 0.45); }
+.v2-theme .v2-tag.topic-produced { color: #4ade80; border-color: rgba(74, 222, 128, 0.45); }
+
+.v2-theme .v2-tag.late {
+  color: #f87171;
+  border-color: rgba(240, 68, 82, 0.5);
+  background: rgba(240, 68, 82, 0.12);
+}
+
+.v2-theme .v2-tag.ok {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.45);
+}
+
+/* 칩 (최근 다룬 종목 등) */
+.v2-theme .v2-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.v2-theme .v2-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  background: var(--bg-soft);
+  font-size: 12px;
+  cursor: default;
+}
+
+.v2-theme .v2-chip b {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.v2-theme .v2-chip.hit {
+  border-color: var(--danger);
+  color: #f87171;
+}
+
+/* 체크리스트 */
+.v2-theme .v2-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-soft);
+}
+
+.v2-theme .v2-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.v2-theme .v2-check input {
+  accent-color: var(--primary);
+  width: 14px;
+  height: 14px;
+}
+
+.v2-theme .v2-check.done span {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+/* 캘린더 */
+.v2-theme .v2-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.v2-theme .v2-cal-dow {
+  padding: 4px 0;
+  text-align: center;
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.v2-theme .v2-cal-dow.sun { color: #f87171; }
+.v2-theme .v2-cal-dow.sat { color: #60a5fa; }
+
+.v2-theme .v2-cal-day {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 96px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.v2-theme .v2-cal-day.week {
+  min-height: 240px;
+}
+
+.v2-theme .v2-cal-day:hover {
+  border-color: var(--line-strong);
+}
+
+.v2-theme .v2-cal-day.selected {
+  border-color: var(--primary);
+}
+
+.v2-theme .v2-cal-day.outside {
+  opacity: 0.45;
+}
+
+.v2-theme .v2-cal-day.today .v2-cal-date {
+  color: var(--primary);
+}
+
+.v2-theme .v2-cal-date {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.v2-theme .v2-cal-count {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.v2-theme .v2-cal-count.hot {
+  color: #f87171;
+}
+
+.v2-theme .v2-cal-chip {
+  padding: 2px 6px;
+  border-left: 2px solid var(--line-strong);
+  border-radius: 2px;
+  background: var(--bg-soft);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-theme .v2-cal-chip.stage-planning { border-left-color: #6b7280; }
+.v2-theme .v2-cal-chip.stage-shooting { border-left-color: #3b82f6; }
+.v2-theme .v2-cal-chip.stage-editing { border-left-color: #8b5cf6; }
+.v2-theme .v2-cal-chip.stage-ready { border-left-color: #ffb020; }
+.v2-theme .v2-cal-chip.stage-done { border-left-color: #22c55e; color: var(--muted); }
+
+.v2-theme .v2-cal-more {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.v2-theme .v2-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.v2-theme .v2-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 2px;
+  vertical-align: -1px;
+  font-style: normal;
+}
+
+/* 표: 열 구성을 페이지에서 --cols 로 지정 */
+.v2-theme .v2-table .data-table-header,
+.v2-theme .v2-table .data-table-row {
+  grid-template-columns: var(--cols);
+  min-width: var(--minw, 720px);
+}
+
+.v2-theme .v2-table .data-table-header {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  letter-spacing: 0.08em;
+}
+
+.v2-theme .v2-table .data-table-row {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 세그먼트 탭 */
+.v2-theme .v2-seg {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.v2-theme .v2-seg button {
+  padding: 7px 12px;
+  border: none;
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.v2-theme .v2-seg button + button {
+  border-left: 1px solid var(--line-strong);
+}
+
+.v2-theme .v2-seg button.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.v2-theme .v2-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 2px;
+  background: var(--line-strong);
+  vertical-align: 0;
+}
+
+.v2-theme .v2-status-dot.on { background: var(--success); }
+.v2-theme .v2-status-dot.warn { background: var(--warning); }
+.v2-theme .v2-status-dot.off { background: var(--danger); }
+
+@media (max-width: 1100px) {
+  .v2-theme .v2-kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .v2-theme .v2-kanban {
+    grid-template-columns: repeat(5, 240px);
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+}
+
+@media (max-width: 720px) {
+  .v2-theme .v2-cal-grid {
+    gap: 3px;
+  }
+
+  .v2-theme .v2-cal-day {
+    min-height: 60px;
+    padding: 4px;
+  }
+
+  .v2-theme .v2-cal-day.week {
+    min-height: 90px;
+  }
+
+  .v2-theme .v2-cal-chip,
+  .v2-theme .v2-cal-more {
+    display: none;
+  }
+
+  .v2-theme .document-head {
+    padding: 16px;
+  }
+}
