@@ -21,7 +21,7 @@ export function useV3Me() {
 }
 
 // 역할(roleType)만으로 접근을 판단한다. super_admin/admin = 관리자, 그 외 = 직원.
-// 관리자 전용 메뉴에 직원이 들어오면 직원 홈(/v3/my-settlement)으로 돌려보낸다.
+// 관리자 전용 메뉴에 직원이 들어오면 직원 홈(/v3/register)으로 돌려보낸다.
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()

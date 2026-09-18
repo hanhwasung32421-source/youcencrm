@@ -73,9 +73,9 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
         <aside id="app-sidebar" className="sidebar">
           <div className="sidebar-section">
             <div className="sidebar-brand">
-              <div className="sidebar-brand-mark">PR</div>
+              <div className="sidebar-brand-mark">GL</div>
               <div>
-                <div className="sidebar-brand-title">파트너 · 컴플라이언스</div>
+                <div className="sidebar-brand-title">성장 실험 랩</div>
                 <div className="sidebar-brand-sub">여왕개미미디어 V5</div>
               </div>
             </div>
@@ -149,7 +149,7 @@ export function PageHeader({
         </div>
         <div className="document-head-actions">
           {actions}
-          <div className="page-badge">{me ? (me.isAdmin ? '관리자 작업 공간' : '직원 작업 공간') : '파트너 CRM'}</div>
+          <div className="page-badge">{me ? (me.isAdmin ? '관리자 작업 공간' : '직원 작업 공간') : '성장 실험 랩'}</div>
         </div>
       </div>
     </div>

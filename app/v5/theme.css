@@ -170,7 +170,7 @@ body:has(.v5-theme) {
 }
 
 /* ------------------------------------------------------------------
-   V5 파트너 · 협찬 딜 · 컴플라이언스 CRM — 위젯 대시보드 확장 클래스
+   V5 성장 실험 · 알고리즘 최적화 캔버스 CRM — 위젯 대시보드 확장 클래스
    모두 .v5-theme 하위로만 적용된다.
 ------------------------------------------------------------------ */
 
@@ -717,6 +717,10 @@ body:has(.v5-theme) {
   padding-bottom: 8px;
 }
 
+.v5-theme .v5-kanban.cols-4 {
+  grid-template-columns: repeat(4, minmax(240px, 1fr));
+}
+
 .v5-theme .v5-kanban-col {
   background: var(--bg-soft);
   border-radius: 14px;
@@ -753,7 +757,7 @@ body:has(.v5-theme) {
   font-weight: 700;
 }
 
-.v5-theme .v5-deal-card {
+.v5-theme .v5-exp-card {
   background: var(--panel);
   border-radius: 12px;
   box-shadow: var(--shadow);
@@ -764,12 +768,12 @@ body:has(.v5-theme) {
   font-size: 13px;
 }
 
-.v5-theme .v5-deal-card-title {
+.v5-theme .v5-exp-card-title {
   font-weight: 700;
   line-height: 1.4;
 }
 
-.v5-theme .v5-deal-card-meta {
+.v5-theme .v5-exp-card-meta {
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -777,13 +781,13 @@ body:has(.v5-theme) {
   font-size: 12px;
 }
 
-.v5-theme .v5-deal-card-amount {
+.v5-theme .v5-exp-card-amount {
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
 
-.v5-theme .v5-deal-card-next {
+.v5-theme .v5-exp-card-next {
   background: var(--bg-soft);
   border-radius: 8px;
   padding: 6px 8px;
@@ -791,7 +795,7 @@ body:has(.v5-theme) {
   color: var(--text);
 }
 
-.v5-theme .v5-deal-card-actions {
+.v5-theme .v5-exp-card-actions {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
@@ -1069,6 +1073,73 @@ body:has(.v5-theme) {
   min-height: 0;
   padding: 6px 8px;
   font-size: 12px;
+}
+
+/* 등록 폼 → 목록으로 "합류"하는 애니메이션, 점수 막대 */
+@keyframes v5-card-join {
+  from {
+    transform: translateY(-10px) scale(0.97);
+    opacity: 0;
+    box-shadow: 0 0 0 2px var(--primary);
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    box-shadow: var(--shadow);
+  }
+}
+
+.v5-theme .v5-card-join {
+  animation: v5-card-join 0.4s ease;
+}
+
+.v5-theme .v5-score-track {
+  height: 10px;
+  border-radius: 6px;
+  background: var(--bg-soft);
+  overflow: hidden;
+  flex: 1;
+}
+
+.v5-theme .v5-score-bar {
+  height: 100%;
+  border-radius: 6px;
+  background: var(--primary);
+}
+
+.v5-theme .v5-score-bar.excellent {
+  background: var(--success);
+}
+
+.v5-theme .v5-score-bar.good {
+  background: var(--primary);
+}
+
+.v5-theme .v5-score-bar.fair {
+  background: var(--warning);
+}
+
+.v5-theme .v5-score-bar.poor {
+  background: var(--danger);
+}
+
+.v5-theme .v5-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 12px;
+  flex: none;
+}
+
+.v5-theme .v5-rank-badge.top {
+  background: var(--primary);
+  color: #fff;
 }
 
 @media (max-width: 1400px) {

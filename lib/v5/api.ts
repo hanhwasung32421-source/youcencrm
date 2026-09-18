@@ -8,7 +8,7 @@ import { V5_MISSING_TABLE_MESSAGE, V5_TABLES } from '@/lib/v5/tables'
 import { isAdminRoleType } from '@/lib/v5/menu'
 import type { StaffUser } from '@/lib/v5/types'
 
-// 사용자가 아직 supabase/sql/v5/100_v5_partners.sql 을 실행하지 않았을 때 PostgREST가 내는 오류.
+// 사용자가 아직 supabase/sql/v5/100_v5_growth_lab.sql 을 실행하지 않았을 때 PostgREST가 내는 오류.
 export function isMissingTableError(error: unknown) {
   if (!error || typeof error !== 'object') return false
   const e = error as { code?: string; message?: string }
@@ -83,6 +83,29 @@ export async function loadStaffUsers(supabaseAdmin: Session['supabaseAdmin']): P
   return ((data || []) as Array<{ id: string; name: string; role_type: string; employment_status: string | null }>)
     .filter((u) => u.role_type !== 'retired' && u.employment_status !== 'retired')
     .map((u) => ({ id: u.id, name: u.name, role_type: u.role_type }))
+}
+
+// 실험/플레이북 폼의 "대상 영상" 드롭다운용 — 팀 전체 최근 영상(최대 300건).
+export async function loadVideoOptions(supabaseAdmin: Session['supabaseAdmin'], limit = 300) {
+  const { data } = await supabaseAdmin
+    .from(V5_TABLES.videos)
+    .select('id, title, stock_name, content_type, published_at, view_count, like_count, comment_count, youtube_url, thumbnail_url, primary_owner_user_id, created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  return (data || []) as Array<{
+    id: string
+    title: string | null
+    stock_name: string
+    content_type: string
+    published_at: string | null
+    view_count: number | null
+    like_count: number | null
+    comment_count: number | null
+    youtube_url: string
+    thumbnail_url: string | null
+    primary_owner_user_id: string | null
+    created_at: string
+  }>
 }
 
 export const ymdSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD 형식이어야 합니다.')

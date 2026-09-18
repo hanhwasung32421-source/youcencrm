@@ -5,6 +5,8 @@ const KST_OFFSET_MS = 9 * 60 * 60 * 1000
 const DAY_MS = 24 * 60 * 60 * 1000
 
 export const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const
+// 월요일 시작 주간 그리드용 순서
+export const WEEKDAY_LABELS_MON_FIRST = ['월', '화', '수', '목', '금', '토', '일'] as const
 
 export function kstYmd(date: Date = new Date()): string {
   return new Date(date.getTime() + KST_OFFSET_MS).toISOString().slice(0, 10)
@@ -30,23 +32,6 @@ export function weekdayOf(ymd: string): number {
 export function weekStartMonday(ymd: string): string {
   const diff = (weekdayOf(ymd) + 6) % 7
   return addDays(ymd, -diff)
-}
-
-export function monthStart(ymd: string): string {
-  return `${ymd.slice(0, 7)}-01`
-}
-
-export function addMonths(ymd: string, months: number): string {
-  const [y, m] = ymd.split('-').map(Number)
-  const total = y * 12 + (m - 1) + months
-  const ny = Math.floor(total / 12)
-  const nm = (total % 12) + 1
-  return `${ny}-${String(nm).padStart(2, '0')}-01`
-}
-
-export function daysInMonth(ymd: string): number {
-  const [y, m] = ymd.split('-').map(Number)
-  return new Date(Date.UTC(y, m, 0)).getUTCDate()
 }
 
 export function formatKstTime(iso: string | null | undefined): string {
@@ -78,29 +63,37 @@ export function formatYmdLabel(ymd: string): string {
   return `${m}월 ${d}일 (${WEEKDAY_LABELS[weekdayOf(ymd)]})`
 }
 
-// datetime-local 입력값 <-> ISO. 입력값은 브라우저 타임존과 무관하게 KST로 해석한다.
-export function isoToLocalInput(iso: string | null | undefined): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return `${kstYmd(d)}T${formatKstTime(iso)}`
-}
-
-export function localInputToIso(value: string): string | null {
-  if (!value) return null
-  const d = new Date(`${value}:00+09:00`)
-  return Number.isNaN(d.getTime()) ? null : d.toISOString()
-}
-
-// 오늘 KST 기준 특정 시각의 ISO (기본 마감 시각 등에 사용)
-export function todayAtKst(hour: number, minute = 0): string {
-  const ymd = kstYmd()
-  return new Date(`${ymd}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`).toISOString()
-}
-
 // 오늘(또는 endYmd)까지 최근 n일의 달력 날짜 목록 (오름차순)
 export function lastNDays(n: number, endYmd: string = kstYmd()): string[] {
   const days: string[] = []
   for (let i = n - 1; i >= 0; i -= 1) days.push(addDays(endYmd, -i))
   return days
+}
+
+// ISO 타임스탬프의 KST 기준 시(0~23). published_at 등 "발행 시각" 분석에 사용.
+export function kstHourOfIso(iso: string | null | undefined): number | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return new Date(d.getTime() + KST_OFFSET_MS).getUTCHours()
+}
+
+// ISO 타임스탬프의 KST 기준 요일(0=일 ... 6=토)
+export function kstWeekdayOfIso(iso: string | null | undefined): number | null {
+  if (!iso) return null
+  return weekdayOf(kstYmd(new Date(iso)))
+}
+
+// 특정 날짜(YYYY-MM-DD)의 특정 시각을 KST ISO로 반환
+export function kstIsoAt(ymd: string, hour: number, minute = 0): string {
+  return new Date(`${ymd}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+09:00`).toISOString()
+}
+
+// 발행 이후 경과 일수(최소 1일 — 0으로 나누는 것을 방지)
+export function daysSince(iso: string | null | undefined, now = Date.now()): number {
+  if (!iso) return 1
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return 1
+  const diff = (now - d.getTime()) / DAY_MS
+  return Math.max(diff, 1 / 24)
 }

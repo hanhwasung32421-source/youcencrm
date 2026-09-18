@@ -3,9 +3,22 @@ import { NextResponse } from 'next/server'
 import { getBearerToken, getProfileByAccessToken } from '@/lib/auth/session'
 import { errorResponse } from '@/lib/api/error-response'
 import { TABLES } from '@/lib/supabase/tables'
-import { DEFAULT_DAILY_TARGET, V2_MISSING_TABLE_MESSAGE, V2_TABLES } from './tables'
-import { addDays, kstDayEnd, kstDayStart, kstYmd } from './dates'
-import type { ChecklistTemplate, ContentType, ProductionItem, RecentStock, StaffLite } from './types'
+import { V2_MISSING_TABLE_MESSAGE, V2_TABLES } from './tables'
+import { addDays, kstDayStart, kstHourOfIso, kstWeekdayOfIso, kstYmd, daysSince } from './dates'
+import {
+  checklistDoneCount,
+  emptyChecklist,
+  LIKE_RATE_TARGET,
+  VIEW_VELOCITY_TARGET_PER_DAY,
+  type ContentType,
+  type DiscoverabilityRow,
+  type RecentStock,
+  type SeoChecklist,
+  type StaffLite,
+  type ThumbnailReview,
+  type TimingHint,
+  type VideoLite
+} from './types'
 
 // 테이블이 아직 없을 때(사용자가 SQL을 실행하기 전) PostgREST/Postgres가 내는 오류 패턴
 export function isMissingTableError(error: unknown): boolean {
@@ -37,6 +50,12 @@ export async function authedContext(request: Request): Promise<AuthedContext> {
   return { profile, supabaseAdmin, isAdmin: isAdminRole(profile.role_type) }
 }
 
+export async function requireV2Admin(request: Request): Promise<AuthedContext> {
+  const ctx = await authedContext(request)
+  if (!ctx.isAdmin) throw new Error('관리자 권한이 필요합니다.')
+  return ctx
+}
+
 export function forbidden(message = '관리자 권한이 필요합니다.') {
   return NextResponse.json({ error: message }, { status: 403 })
 }
@@ -46,11 +65,14 @@ export function unauthorizedResponse(e: unknown) {
   return NextResponse.json({ error: message }, { status: 401 })
 }
 
-// zod 검증 실패는 400, 나머지는 공통 errorResponse
+// zod 검증 실패는 400, 권한 오류는 401/403, 나머지는 공통 errorResponse
 export function handleRouteError(e: unknown, fallback: string) {
   const issues = (e as { issues?: { message?: string }[] })?.issues
   if (issues?.[0]?.message) {
     return NextResponse.json({ error: issues[0].message }, { status: 400 })
+  }
+  if (e instanceof Error && /관리자 권한이 필요/.test(e.message)) {
+    return forbidden(e.message)
   }
   if (e instanceof Error && /로그인이 필요|프로필을 찾을 수 없/.test(e.message)) {
     return unauthorizedResponse(e)
@@ -63,7 +85,10 @@ export function handleDbError(error: unknown, fallback: string) {
   return errorResponse(error, fallback)
 }
 
-// 활성 직원 목록(퇴사 제외). 담당자 선택/워크로드 기준.
+const VIDEO_SELECT =
+  'id, title, description, stock_name, content_type, youtube_url, thumbnail_url, published_at, duration_seconds, view_count, like_count, comment_count, primary_owner_user_id, created_at, last_synced_at'
+
+// 활성 직원 목록(퇴사 제외). 담당자 선택/플래너 기준.
 export async function loadStaff(supabaseAdmin: SupabaseAdmin): Promise<StaffLite[]> {
   const { data } = await supabaseAdmin
     .from(TABLES.crmUsers)
@@ -85,154 +110,7 @@ export async function loadStaffMap(supabaseAdmin: SupabaseAdmin): Promise<Map<st
   return map
 }
 
-// 담당자별 일일 목표. 테이블이 없으면 전부 기본값.
-export async function loadTargets(supabaseAdmin: SupabaseAdmin, userIds: string[]): Promise<Record<string, number>> {
-  const targets: Record<string, number> = {}
-  for (const id of userIds) targets[id] = DEFAULT_DAILY_TARGET
-  if (userIds.length === 0) return targets
-  const { data, error } = await supabaseAdmin.from(V2_TABLES.staffTargets).select('user_id, daily_target').in('user_id', userIds)
-  if (error) return targets
-  for (const row of (data || []) as { user_id: string; daily_target: number }[]) {
-    targets[row.user_id] = Number(row.daily_target)
-  }
-  return targets
-}
-
-// 기간 내 등록된 영상을 담당자별로 센다 (youtubeCRM_videos.created_at 기준)
-export async function countVideosByUser(
-  supabaseAdmin: SupabaseAdmin,
-  startIso: string,
-  endIso: string,
-  userIds?: string[]
-): Promise<Record<string, number>> {
-  let query = supabaseAdmin
-    .from(TABLES.videos)
-    .select('primary_owner_user_id')
-    .gte('created_at', startIso)
-    .lt('created_at', endIso)
-  if (userIds && userIds.length > 0) query = query.in('primary_owner_user_id', userIds)
-  const { data } = await query
-  const counts: Record<string, number> = {}
-  for (const row of (data || []) as { primary_owner_user_id: string }[]) {
-    counts[row.primary_owner_user_id] = (counts[row.primary_owner_user_id] || 0) + 1
-  }
-  return counts
-}
-
-// 최근 N일 담당자별 일자별 등록 수 (스파크라인용)
-export async function videoCountsByUserAndDay(
-  supabaseAdmin: SupabaseAdmin,
-  days: string[],
-  userIds: string[]
-): Promise<Record<string, Record<string, number>>> {
-  const result: Record<string, Record<string, number>> = {}
-  for (const id of userIds) {
-    result[id] = {}
-    for (const day of days) result[id][day] = 0
-  }
-  if (days.length === 0 || userIds.length === 0) return result
-  const start = kstDayStart(days[0]).toISOString()
-  const end = kstDayEnd(days[days.length - 1]).toISOString()
-  const { data } = await supabaseAdmin
-    .from(TABLES.videos)
-    .select('primary_owner_user_id, created_at')
-    .gte('created_at', start)
-    .lt('created_at', end)
-    .in('primary_owner_user_id', userIds)
-  for (const row of (data || []) as { primary_owner_user_id: string; created_at: string }[]) {
-    const day = kstYmd(new Date(row.created_at))
-    if (result[row.primary_owner_user_id] && day in result[row.primary_owner_user_id]) {
-      result[row.primary_owner_user_id][day] += 1
-    }
-  }
-  return result
-}
-
-// production_items 원본 행 → API 응답 형태 (담당자 이름, 체크리스트 진행률 부착)
-type RawItem = Omit<ProductionItem, 'assignee_name' | 'checklist_done' | 'checklist_total'>
-
-export async function decorateItems(supabaseAdmin: SupabaseAdmin, rows: RawItem[]): Promise<ProductionItem[]> {
-  if (rows.length === 0) return []
-  const staffMap = await loadStaffMap(supabaseAdmin)
-  const progress = await loadChecklistProgress(
-    supabaseAdmin,
-    rows.map((row) => row.id)
-  )
-  return rows.map((row) => ({
-    ...row,
-    assignee_name: row.assignee_user_id ? staffMap.get(row.assignee_user_id) || null : null,
-    checklist_done: progress[row.id]?.done ?? 0,
-    checklist_total: progress[row.id]?.total ?? 0
-  }))
-}
-
-export async function loadChecklistProgress(
-  supabaseAdmin: SupabaseAdmin,
-  itemIds: string[]
-): Promise<Record<string, { done: number; total: number }>> {
-  const result: Record<string, { done: number; total: number }> = {}
-  if (itemIds.length === 0) return result
-  const { data, error } = await supabaseAdmin
-    .from(V2_TABLES.productionChecklists)
-    .select('production_item_id, checked')
-    .in('production_item_id', itemIds)
-  if (error) return result
-  for (const row of (data || []) as { production_item_id: string; checked: boolean }[]) {
-    const bucket = result[row.production_item_id] || (result[row.production_item_id] = { done: 0, total: 0 })
-    bucket.total += 1
-    if (row.checked) bucket.done += 1
-  }
-  return result
-}
-
-// 아이템 콘텐츠 형식에 맞는 기본 템플릿을 골라 체크리스트 행을 만든다(이미 있으면 건너뜀).
-export async function materializeChecklist(
-  supabaseAdmin: SupabaseAdmin,
-  item: { id: string; content_type: ContentType }
-): Promise<{ rows: { item_index: number; label: string; checked: boolean }[]; templateName: string | null }> {
-  const { data: existing, error: existingError } = await supabaseAdmin
-    .from(V2_TABLES.productionChecklists)
-    .select('item_index, label, checked')
-    .eq('production_item_id', item.id)
-    .order('item_index', { ascending: true })
-  if (existingError) throw existingError
-  if (existing && existing.length > 0) {
-    return { rows: existing, templateName: null }
-  }
-
-  const { data: templates, error: templateError } = await supabaseAdmin
-    .from(V2_TABLES.checklistTemplates)
-    .select('id, name, content_type, items, is_default, created_at')
-    .order('created_at', { ascending: true })
-  if (templateError) throw templateError
-
-  const list = (templates || []) as ChecklistTemplate[]
-  const template =
-    list.find((t) => t.content_type === item.content_type && t.is_default) ||
-    list.find((t) => t.content_type === null && t.is_default) ||
-    list.find((t) => t.content_type === item.content_type) ||
-    list[0]
-  if (!template) return { rows: [], templateName: null }
-
-  const labels = Array.isArray(template.items) ? template.items.map((label) => String(label)).filter(Boolean) : []
-  if (labels.length === 0) return { rows: [], templateName: template.name }
-
-  const payload = labels.map((label, index) => ({
-    production_item_id: item.id,
-    item_index: index,
-    label,
-    checked: false
-  }))
-  const { data: inserted, error: insertError } = await supabaseAdmin
-    .from(V2_TABLES.productionChecklists)
-    .upsert(payload, { onConflict: 'production_item_id,item_index' })
-    .select('item_index, label, checked')
-    .order('item_index', { ascending: true })
-  if (insertError) throw insertError
-  return { rows: inserted || [], templateName: template.name }
-}
-
-// 최근 7일 등록 영상의 종목명 집계 — 중복 소재를 피하기 위한 힌트
+// 최근 N일 등록 영상의 종목명 집계 — 키워드 레이더 중복 소재 경고에 사용
 export async function loadRecentStocks(supabaseAdmin: SupabaseAdmin, days = 7): Promise<RecentStock[]> {
   const start = kstDayStart(addDays(kstYmd(), -(days - 1))).toISOString()
   const { data, error } = await supabaseAdmin
@@ -255,6 +133,89 @@ export async function loadRecentStocks(supabaseAdmin: SupabaseAdmin, days = 7): 
     }
   }
   return [...map.values()].sort((a, b) => b.count - a.count || (a.last_at < b.last_at ? 1 : -1))
+}
+
+// 조회 범위(관리자=전체, 직원=본인)에 맞는 최근 영상 목록
+export async function loadVideos(
+  supabaseAdmin: SupabaseAdmin,
+  scope: { userId: string; isAdmin: boolean },
+  limit = 200
+): Promise<VideoLite[]> {
+  let query = supabaseAdmin.from(TABLES.videos).select(VIDEO_SELECT).order('created_at', { ascending: false }).limit(limit)
+  if (!scope.isAdmin) query = query.eq('primary_owner_user_id', scope.userId)
+  const { data, error } = await query
+  if (error) throw error
+  return ((data || []) as any[]).map((row) => ({ ...row, content_type: row.content_type as ContentType }))
+}
+
+export async function loadChecklistMap(supabaseAdmin: SupabaseAdmin, videoIds: string[]): Promise<Map<string, SeoChecklist>> {
+  const map = new Map<string, SeoChecklist>()
+  if (videoIds.length === 0) return map
+  const { data, error } = await supabaseAdmin.from(V2_TABLES.seoChecklists).select('*').in('video_id', videoIds)
+  if (error) throw error
+  for (const row of (data || []) as SeoChecklist[]) map.set(row.video_id, row)
+  return map
+}
+
+// 영상별 최신 썸네일 리뷰(자가평가) — created_at 내림차순 첫 건
+export async function loadLatestReviewMap(supabaseAdmin: SupabaseAdmin, videoIds: string[]): Promise<Map<string, ThumbnailReview>> {
+  const map = new Map<string, ThumbnailReview>()
+  if (videoIds.length === 0) return map
+  const { data, error } = await supabaseAdmin
+    .from(V2_TABLES.thumbnailReviews)
+    .select('id, video_id, rating, note, reviewed_by, created_at')
+    .in('video_id', videoIds)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  for (const row of (data || []) as ThumbnailReview[]) {
+    if (!map.has(row.video_id)) map.set(row.video_id, row)
+  }
+  return map
+}
+
+export function checklistFor(videoId: string, map: Map<string, SeoChecklist>): SeoChecklist {
+  return map.get(videoId) || emptyChecklist(videoId)
+}
+
+// ---- 발견성 점수(Discoverability Score) ----
+// 가중치/기준값은 lib/v2/types.ts 에 정의(클라이언트에서도 import 가능하도록).
+export function computeDiscoverability(video: VideoLite, checklist: SeoChecklist | null | undefined): Omit<DiscoverabilityRow, 'video' | 'ownerName'> {
+  const views = video.view_count || 0
+  const likes = video.like_count || 0
+  const days = daysSince(video.published_at || video.created_at)
+  const viewsPerDay = views / days
+  const viewVelocityScore = Math.min(100, Math.round((viewsPerDay / VIEW_VELOCITY_TARGET_PER_DAY) * 100))
+  const likeRate = views > 0 ? likes / views : 0
+  const likeRateScore = Math.min(100, Math.round((likeRate / LIKE_RATE_TARGET) * 100))
+  const done = checklistDoneCount(checklist)
+  const checklistScore = Math.round((done / 4) * 100)
+  const score = Math.round(0.4 * viewVelocityScore + 0.3 * likeRateScore + 0.3 * checklistScore)
+  return { viewsPerDay, viewVelocityScore, likeRateScore, checklistScore, score, checklistDone: done }
+}
+
+// ---- 최적 발행 요일/시간 힌트 ----
+// 실 youtubeCRM_videos.published_at(KST) + view_count 를 요일×시간대로 묶어 평균 조회수가 가장 높은 조합을 찾는다.
+export function computeTimingHint(videos: { published_at: string | null; view_count: number | null }[]): TimingHint {
+  const buckets = new Map<string, { sum: number; count: number; weekday: number; hour: number }>()
+  for (const v of videos) {
+    if (!v.published_at) continue
+    const weekday = kstWeekdayOfIso(v.published_at)
+    const hour = kstHourOfIso(v.published_at)
+    if (weekday === null || hour === null) continue
+    const key = `${weekday}-${hour}`
+    const bucket = buckets.get(key) || { sum: 0, count: 0, weekday, hour }
+    bucket.sum += v.view_count || 0
+    bucket.count += 1
+    buckets.set(key, bucket)
+  }
+  let best: { weekday: number; hour: number; avg: number; count: number } | null = null
+  for (const b of buckets.values()) {
+    if (b.count < 2) continue // 표본 2건 미만은 신뢰하지 않는다
+    const avg = b.sum / b.count
+    if (!best || avg > best.avg) best = { weekday: b.weekday, hour: b.hour, avg, count: b.count }
+  }
+  if (!best) return { weekday: null, hour: null, avgViews: 0, sampleSize: 0 }
+  return { weekday: best.weekday, hour: best.hour, avgViews: Math.round(best.avg), sampleSize: best.count }
 }
 
 export function nowIso() {

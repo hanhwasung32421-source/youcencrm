@@ -1,5 +1,7 @@
-// V3 수익화 · 정산 CRM 메뉴. 권한은 DB 메뉴권한 테이블이 아니라 역할(roleType)로만
-// 판단한다: super_admin/admin = 관리자, 그 외 = 직원.
+// V3(시청자 참여 · 커뮤니티 성장 CRM) 메뉴. 권한은 DB 메뉴권한 테이블이 아니라
+// 역할(roleType)로만 판단한다: super_admin/admin = 관리자, 그 외 = 직원.
+// 모든 메뉴는 audience:'all'이며, 화면/데이터 범위(팀 전체 vs 본인)는 각 API가
+// 역할에 따라 자체적으로 좁힌다.
 
 export type MenuAudience = 'admin' | 'staff' | 'all'
 
@@ -13,19 +15,17 @@ export type MenuDefinition = {
 }
 
 export const MENU_GROUPS = [
-  { key: 'finance', label: '재무', icon: '📊' },
-  { key: 'settlement', label: '정산', icon: '🧾' },
-  { key: 'rules', label: '규칙', icon: '⚙' }
+  { key: 'content', label: '콘텐츠', icon: '📥' },
+  { key: 'insight', label: '참여 인사이트', icon: '💬' },
+  { key: 'format', label: '포맷·시리즈', icon: '🧩' }
 ] as const
 
 export const MENU_DEFINITIONS: MenuDefinition[] = [
-  { key: 'dashboard', label: '매출 대시보드', href: '/v3/dashboard', audience: 'admin', group: 'finance', description: '이번 달 매출·순이익과 12개월 추이' },
-  { key: 'revenue', label: '수익원 관리', href: '/v3/revenue', audience: 'admin', group: 'finance', description: '월별 수익원 항목 원장' },
-  { key: 'expenses', label: '비용 · 손익', href: '/v3/expenses', audience: 'admin', group: 'finance', description: '비용 기록과 월간 손익계산서' },
-  { key: 'sponsorships', label: '협찬·광고 정산', href: '/v3/sponsorships', audience: 'admin', group: 'settlement', description: '광고주 인보이스와 미수금' },
-  { key: 'incentives', label: '직원 인센티브 정산', href: '/v3/incentives', audience: 'admin', group: 'settlement', description: '월별 직원 정산액 계산·확정' },
-  { key: 'my-settlement', label: '내 정산', href: '/v3/my-settlement', audience: 'all', group: 'settlement', description: '내 영상 실적과 예상 인센티브' },
-  { key: 'incentive-rules', label: '인센티브 규칙', href: '/v3/incentive-rules', audience: 'admin', group: 'rules', description: '직원별 단가·가중치 설정' }
+  { key: 'register', label: '영상 등록', href: '/v3/register', audience: 'all', group: 'content', description: '유튜브 URL로 새 영상을 등록합니다' },
+  { key: 'engagement', label: '참여도 대시보드', href: '/v3/engagement', audience: 'all', group: 'insight', description: '참여율 · 댓글 비율 등 참여 품질 지표' },
+  { key: 'lifecycle', label: '조회 성장 곡선', href: '/v3/lifecycle', audience: 'all', group: 'insight', description: '영상별 조회수 라이프사이클' },
+  { key: 'viral', label: '바이럴 신호 레이더', href: '/v3/viral', audience: 'all', group: 'insight', description: '조회 속도가 급상승한 영상 감지' },
+  { key: 'series', label: '형식 · 시리즈 효과', href: '/v3/series', audience: 'all', group: 'format', description: '롱폼 · 숏폼, 시리즈별 참여 효율 비교' }
 ]
 
 export const ADMIN_ROLE_TYPES = ['super_admin', 'admin']
@@ -34,8 +34,9 @@ export function isAdminRole(roleType: string | null | undefined) {
   return !!roleType && ADMIN_ROLE_TYPES.includes(roleType)
 }
 
+// 관리자 홈 = 참여도 대시보드(팀 현황), 직원 홈 = 영상 등록(매일 하는 작업)
 export function getHomeHref(roleType: string | null | undefined) {
-  return isAdminRole(roleType) ? '/v3/dashboard' : '/v3/my-settlement'
+  return isAdminRole(roleType) ? '/v3/engagement' : '/v3/register'
 }
 
 export function getMenuByPath(pathname: string): MenuDefinition | null {

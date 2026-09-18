@@ -70,6 +70,16 @@ export function formatShortDate(ymd: string) {
   return `${m}/${d}`
 }
 
+// ISO-8601 주차 라벨("2026-W38"). 주간 회고의 주차 자동 계산에 쓴다.
+export function isoWeekLabel(date: Date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNum = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7)
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
+}
+
 // datetime-local input 값(YYYY-MM-DDTHH:mm)으로 변환
 export function toDateTimeLocal(value: string | null | undefined) {
   const date = value ? new Date(value) : new Date()

@@ -53,7 +53,7 @@ export default function LoginPage() {
         headers: { Authorization: `Bearer ${data.session.access_token}` }
       })
 
-      // 관리자/직원 모두 제작 보드에서 시작한다(보드가 역할에 맞게 범위를 좁힌다).
+      // 관리자/직원 모두 영상 등록 화면에서 시작한다.
       await fetchMe(data.session.access_token)
       router.push(V2_HOME_HREF)
     } catch (e: any) {
@@ -69,7 +69,7 @@ export default function LoginPage() {
         <div className="panel form-stack" style={{ width: '100%', maxWidth: 520 }}>
           <img className="auth-logo" src="/logo-ant.png" alt="" width={56} height={56} />
           <h1 className="auth-title">여왕개미미디어 CRM</h1>
-          <p className="auth-subtitle">콘텐츠 제작 파이프라인 · Production Ops</p>
+          <p className="auth-subtitle">SEO·발견성 최적화 · SEO Radar</p>
           <div className="field">
             <label className="label">아이디</label>
             <input

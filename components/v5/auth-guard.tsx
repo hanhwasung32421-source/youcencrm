@@ -6,7 +6,7 @@ import { getAccessToken } from '@/lib/session/authed-fetch'
 import { fetchMe } from '@/lib/session/me-client'
 import { canAccessPath, getHomeHref } from '@/lib/v5/menu'
 
-// V5는 메뉴 권한 테이블을 보지 않고 역할(role_type)만으로 접근을 가른다.
+// V5(성장 실험 · 알고리즘 최적화 캔버스)는 메뉴 권한 테이블을 보지 않고 역할(role_type)만으로 접근을 가른다.
 // super_admin/admin = 관리자, 그 외 = 직원. 로그인 안 된 사용자는 /v5/login 으로.
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()

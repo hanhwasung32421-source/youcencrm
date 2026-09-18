@@ -8,7 +8,7 @@ import { isAdminRoleType, V2_HOME_HREF } from '@/lib/v2/menu'
 import { V2SessionProvider, useV2Me, type V2Me } from './session-context'
 
 // V2는 메뉴 권한 테이블을 쓰지 않는다. 역할(roleType)만으로 관리자/직원을 가른다.
-// 로그인 안 됨 → /v2/login, 관리자 전용 화면에 직원 접근 → 제작 보드.
+// 로그인 안 됨 → /v2/login, 관리자 전용 화면에 직원 접근 → 영상 등록 홈으로.
 export function AuthGuard({ children, requireAdmin = false }: { children: React.ReactNode; requireAdmin?: boolean }) {
   const router = useRouter()
   const [me, setMe] = useState<V2Me | null>(null)
@@ -69,7 +69,7 @@ export function AuthGuard({ children, requireAdmin = false }: { children: React.
   return <V2SessionProvider me={me}>{children}</V2SessionProvider>
 }
 
-// 관리자 전용 페이지 본문을 감싼다. 직원이면 제작 보드로 돌려보낸다.
+// 관리자 전용 페이지 본문을 감싼다. 직원이면 영상 등록 홈으로 돌려보낸다.
 export function AdminOnly({ children }: { children: React.ReactNode }) {
   const me = useV2Me()
   const router = useRouter()

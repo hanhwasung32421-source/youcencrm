@@ -1,24 +1,17 @@
-const krw = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 })
 const num = new Intl.NumberFormat('ko-KR')
-
-export function formatKrw(value: number | null | undefined): string {
-  const n = Number(value || 0)
-  const sign = n < 0 ? '-' : ''
-  return `${sign}₩${krw.format(Math.abs(Math.round(n)))}`
-}
-
-// 대시보드 KPI처럼 공간이 좁을 때: ₩1,234만 / ₩1.2억
-export function formatKrwCompact(value: number | null | undefined): string {
-  const n = Number(value || 0)
-  const abs = Math.abs(n)
-  const sign = n < 0 ? '-' : ''
-  if (abs >= 100_000_000) return `${sign}₩${(abs / 100_000_000).toFixed(abs >= 1_000_000_000 ? 0 : 1)}억`
-  if (abs >= 10_000) return `${sign}₩${krw.format(Math.round(abs / 10_000))}만`
-  return `${sign}₩${krw.format(abs)}`
-}
 
 export function formatNumber(value: number | null | undefined): string {
   return num.format(Number(value || 0))
+}
+
+// 좁은 공간용 축약 표기: 12,340 -> 1.2만, 340,000,000 -> 3.4억
+export function formatCompactNumber(value: number | null | undefined): string {
+  const n = Number(value || 0)
+  const abs = Math.abs(n)
+  const sign = n < 0 ? '-' : ''
+  if (abs >= 100_000_000) return `${sign}${(abs / 100_000_000).toFixed(abs >= 1_000_000_000 ? 0 : 1)}억`
+  if (abs >= 10_000) return `${sign}${(abs / 10_000).toFixed(abs >= 1_000_000 ? 0 : 1)}만`
+  return `${sign}${num.format(Math.round(abs))}`
 }
 
 export function formatPct(value: number | null | undefined, digits = 1): string {

@@ -68,7 +68,7 @@ export default function LoginPage() {
         <div className="panel form-stack" style={{ width: '100%', maxWidth: 520 }}>
           <img className="auth-logo" src="/logo-ant.png" alt="" width={56} height={56} />
           <h1 className="auth-title">여왕개미미디어 CRM</h1>
-          <p className="auth-subtitle">파트너 · 협찬 딜 · 컴플라이언스 CRM</p>
+          <p className="auth-subtitle">성장 실험 · 알고리즘 최적화 캔버스 CRM</p>
           <div className="field">
             <label className="label">아이디</label>
             <input

@@ -27,8 +27,8 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
       <aside id="app-sidebar" className="sidebar">
         <div className="sidebar-section">
           <div className="v3-sidebar-brand">
-            <span>💰</span>
-            <span>수익화 · 정산</span>
+            <span>💬</span>
+            <span>참여 · 성장</span>
           </div>
           <nav aria-label="주요 메뉴">
             {MENU_GROUPS.map((group) => {

@@ -1,8 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { V3_SQL_FILE } from '@/lib/v3/tables'
-import { formatMonthLabel, pctChange, shiftMonth } from '@/lib/v3/finance'
-import { formatKrw, formatSignedPct } from '@/lib/v3/format'
+import { formatNumber, formatSignedPct } from '@/lib/v3/format'
+import { pctChange } from '@/lib/v3/engagement'
 
 // ── 샘플 데이터 배너 ────────────────────────────────────────────
 export function SampleBanner({ show }: { show: boolean }) {
@@ -17,7 +18,7 @@ export function SampleBanner({ show }: { show: boolean }) {
   )
 }
 
-// ── 콜아웃 ─────────────────────────────────────────────────────
+// ── 콜아웃(자동 생성 한글 요약) ─────────────────────────────────
 export function Callout({
   icon = '💡',
   tone = 'default',
@@ -73,55 +74,36 @@ export function Tag({ tone = 'gray', children }: { tone?: 'blue' | 'green' | 'am
   return <span className={`v3-tag ${tone}`}>{children}</span>
 }
 
-// ── 월 선택 ────────────────────────────────────────────────────
-export function MonthPicker({ value, onChange, disabled }: { value: string; onChange: (month: string) => void; disabled?: boolean }) {
-  return (
-    <div className="v3-month-nav" aria-label="월 선택">
-      <button type="button" onClick={() => onChange(shiftMonth(value, -1))} disabled={disabled} aria-label="이전 달">
-        ‹
-      </button>
-      <input
-        type="month"
-        value={value}
-        disabled={disabled}
-        onChange={(e) => {
-          if (/^\d{4}-\d{2}$/.test(e.target.value)) onChange(e.target.value)
-        }}
-        aria-label={formatMonthLabel(value)}
-      />
-      <button type="button" onClick={() => onChange(shiftMonth(value, 1))} disabled={disabled} aria-label="다음 달">
-        ›
-      </button>
-    </div>
-  )
-}
-
 // ── KPI 카드 ───────────────────────────────────────────────────
 export function KpiCard({
   label,
   current,
   previous,
-  format = formatKrw,
-  invert = false
+  format = formatNumber,
+  invert = false,
+  badge
 }: {
   label: string
   current: number
   previous?: number
   format?: (value: number) => string
   invert?: boolean
+  badge?: React.ReactNode
 }) {
   const change = previous === undefined ? null : pctChange(current, previous)
   const positive = change !== null && (invert ? change < 0 : change > 0)
   const negative = change !== null && (invert ? change > 0 : change < 0)
   return (
     <div className="v3-kpi">
-      <div className="v3-kpi-label">{label}</div>
+      <div className="v3-kpi-label">
+        {label} {badge}
+      </div>
       <div className="v3-kpi-value" title={format(current)}>
         {format(current)}
       </div>
       {previous !== undefined ? (
         <div className={`v3-kpi-delta ${positive ? 'v3-delta-up' : negative ? 'v3-delta-down' : ''}`}>
-          전월 {format(previous)} · {change === null ? '비교 불가' : formatSignedPct(change)}
+          지난 기간 {format(previous)} · {change === null ? '비교 불가' : formatSignedPct(change)}
         </div>
       ) : null}
     </div>
@@ -178,4 +160,53 @@ export function DocRow({
       {children}
     </div>
   )
+}
+
+// ── 종목 태그 pill 입력 ────────────────────────────────────────
+// 자유 입력 + 자주 쓰는 종목 pill을 클릭하면 바로 채워지는 간단한 태그 입력기.
+export function StockTagInput({
+  value,
+  onChange,
+  suggestions,
+  disabled
+}: {
+  value: string
+  onChange: (value: string) => void
+  suggestions: string[]
+  disabled?: boolean
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <input
+        className="input"
+        placeholder="예: 삼성전자"
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {suggestions.map((name) => (
+          <button
+            type="button"
+            key={name}
+            className={`v3-tag blue v3-tag-button ${value === name ? 'active' : ''}`}
+            disabled={disabled}
+            onClick={() => onChange(name)}
+          >
+            {name}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── 접기/펼치기 안내 텍스트(빈 상태) ──────────────────────────
+export function EmptyState({ children }: { children: React.ReactNode }) {
+  return <div className="empty-state">{children}</div>
+}
+
+export function useToggle(initial = false): [boolean, () => void] {
+  const [value, setValue] = useState(initial)
+  return [value, () => setValue((v) => !v)]
 }

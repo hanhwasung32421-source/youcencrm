@@ -29,9 +29,9 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
     <div className="workspace">
       <aside id="app-sidebar" className="sidebar">
         <div className="sidebar-section v2-sidebar-brand">
-          <div className="v2-brand-line">Production Ops</div>
+          <div className="v2-brand-line">SEO Radar</div>
           <div className="small muted" style={{ marginTop: 6 }}>
-            콘텐츠 제작 파이프라인 · V2
+            SEO·발견성 최적화 · V2
           </div>
         </div>
 
@@ -93,7 +93,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
         </div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {actions}
-          <div className="page-badge">{me.isAdmin ? '관리자 · 운영 콘솔' : '직원 · 제작 콘솔'}</div>
+          <div className="page-badge">{me.isAdmin ? '관리자 · SEO 콘솔' : '직원 · SEO 콘솔'}</div>
         </div>
       </div>
     </div>

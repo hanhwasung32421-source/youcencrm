@@ -1,23 +1,4 @@
-// V2 제작 파이프라인 공용 타입/상수. 서버(API)와 클라이언트(페이지)가 함께 쓴다.
-
-export const STAGES = ['planning', 'shooting', 'editing', 'ready', 'done'] as const
-export type Stage = (typeof STAGES)[number]
-export const STAGE_LABELS: Record<Stage, string> = {
-  planning: '기획',
-  shooting: '촬영/녹화',
-  editing: '편집',
-  ready: '업로드 대기',
-  done: '완료'
-}
-
-export const PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const
-export type Priority = (typeof PRIORITIES)[number]
-export const PRIORITY_LABELS: Record<Priority, string> = {
-  low: '낮음',
-  normal: '보통',
-  high: '높음',
-  urgent: '긴급'
-}
+// V2 (SEO·발견성 최적화) 공용 타입/상수. 서버(API)와 클라이언트(페이지)가 함께 쓴다.
 
 export const CONTENT_TYPES = ['longform', 'shortform'] as const
 export type ContentType = (typeof CONTENT_TYPES)[number]
@@ -26,12 +7,20 @@ export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   shortform: '숏폼'
 }
 
-export const TOPIC_STATUSES = ['waiting', 'assigned', 'produced'] as const
-export type TopicStatus = (typeof TOPIC_STATUSES)[number]
-export const TOPIC_STATUS_LABELS: Record<TopicStatus, string> = {
+export const PRIORITIES = ['low', 'normal', 'high'] as const
+export type Priority = (typeof PRIORITIES)[number]
+export const PRIORITY_LABELS: Record<Priority, string> = {
+  low: '낮음',
+  normal: '보통',
+  high: '높음'
+}
+
+export const KEYWORD_STATUSES = ['waiting', 'in_progress', 'done'] as const
+export type KeywordStatus = (typeof KEYWORD_STATUSES)[number]
+export const KEYWORD_STATUS_LABELS: Record<KeywordStatus, string> = {
   waiting: '대기',
-  assigned: '배정됨',
-  produced: '제작됨'
+  in_progress: '작업중',
+  done: '완료'
 }
 
 export type StaffLite = {
@@ -40,38 +29,85 @@ export type StaffLite = {
   roleType?: string
 }
 
-export type ProductionItem = {
+// ---- 등록 영상 (실 테이블 youtubeCRM_videos 를 읽어서 쓰는 형태) ----
+export type VideoLite = {
   id: string
+  title: string | null
+  description: string | null
   stock_name: string
-  issue_summary: string | null
-  assignee_user_id: string | null
-  assignee_name: string | null
   content_type: ContentType
-  stage: Stage
-  priority: Priority
-  due_at: string | null
-  note: string | null
-  video_id: string | null
-  topic_id: string | null
-  created_by: string | null
+  youtube_url: string | null
+  thumbnail_url: string | null
+  published_at: string | null
+  duration_seconds: number | null
+  view_count: number | null
+  like_count: number | null
+  comment_count: number | null
+  primary_owner_user_id: string
+  owner_name?: string | null
   created_at: string
-  updated_at: string
-  checklist_done?: number
-  checklist_total?: number
+  last_synced_at: string | null
 }
 
-export type TopicItem = {
+// ---- SEO 체크리스트 (youtubeCRM_seo_checklists) ----
+export type SeoChecklist = {
+  video_id: string
+  title_has_stock: boolean
+  thumbnail_text_checked: boolean
+  description_timestamps: boolean
+  tags_5plus: boolean
+  updated_at: string
+}
+
+export const SEO_CHECKLIST_FIELDS = ['title_has_stock', 'thumbnail_text_checked', 'description_timestamps', 'tags_5plus'] as const
+export type SeoChecklistField = (typeof SEO_CHECKLIST_FIELDS)[number]
+
+export const SEO_CHECKLIST_LABELS: Record<SeoChecklistField, string> = {
+  title_has_stock: '제목에 종목명 포함',
+  thumbnail_text_checked: '썸네일 텍스트 대비 확인',
+  description_timestamps: '설명란에 타임스탬프',
+  tags_5plus: '태그 5개 이상'
+}
+
+export function emptyChecklist(videoId: string): SeoChecklist {
+  return {
+    video_id: videoId,
+    title_has_stock: false,
+    thumbnail_text_checked: false,
+    description_timestamps: false,
+    tags_5plus: false,
+    updated_at: new Date().toISOString()
+  }
+}
+
+export function checklistDoneCount(checklist: SeoChecklist | null | undefined): number {
+  if (!checklist) return 0
+  return SEO_CHECKLIST_FIELDS.reduce((n, field) => n + (checklist[field] ? 1 : 0), 0)
+}
+
+// ---- 썸네일 클릭률 자가평가 (youtubeCRM_thumbnail_reviews) ----
+export type ThumbnailReview = {
+  id: string
+  video_id: string
+  rating: number
+  note: string | null
+  reviewed_by: string | null
+  reviewed_by_name?: string | null
+  created_at: string
+}
+
+// ---- 키워드·트렌드 레이더 (youtubeCRM_keyword_radar) ----
+export type KeywordRadarItem = {
   id: string
   stock_name: string
-  issue_summary: string | null
+  keyword: string
   source_url: string | null
-  urgency: Priority
-  status: TopicStatus
-  assigned_to: string | null
-  assigned_name: string | null
+  priority: Priority
+  status: KeywordStatus
   created_by: string | null
   created_by_name: string | null
   created_at: string
+  updated_at: string
 }
 
 export type RecentStock = {
@@ -80,97 +116,98 @@ export type RecentStock = {
   last_at: string
 }
 
-export type ChecklistTemplate = {
+// ---- 발행 모멘텀 플래너 (youtubeCRM_planned_slots) ----
+export type PlannedSlot = {
   id: string
-  name: string
-  content_type: ContentType | null
-  items: string[]
-  is_default: boolean
+  staff_user_id: string
+  planned_date: string
+  planned_hour: number
+  note: string | null
   created_at: string
 }
 
-export type ChecklistRow = {
-  item_index: number
-  label: string
-  checked: boolean
+export type TimingHint = {
+  weekday: number | null
+  hour: number | null
+  avgViews: number
+  sampleSize: number
 }
 
-export type AttendanceLite = {
-  check_in_at: string | null
-  check_out_at: string | null
-  attendance_status: string | null
+// ---- 제목·썸네일 최적화 스코어카드 ----
+export type OptimizationRow = {
+  video: VideoLite
+  titleLength: number
+  titleLengthOk: boolean
+  titleHasStock: boolean
+  hasDescription: boolean
+  checklist: SeoChecklist
+  latestReview: ThumbnailReview | null
+  improvementScore: number // 0~4, 높을수록 개선 필요
 }
 
-export type WorkloadRow = {
-  userId: string
-  name: string
-  target: number
-  doneToday: number
-  inProgress: number
-  late: number
-  planning: number
-  attendance: AttendanceLite | null
-  spark: { date: string; count: number }[]
+// ---- 검색 성과 리포트 ----
+export type DiscoverabilityRow = {
+  video: VideoLite
+  ownerName: string
+  viewsPerDay: number
+  viewVelocityScore: number
+  likeRateScore: number
+  checklistScore: number
+  score: number
+  checklistDone: number
 }
 
-export type BoardPayload = {
-  items: ProductionItem[]
-  staff: StaffLite[]
-  targets: Record<string, number>
-  doneToday: Record<string, number>
-  today: string
-  sample?: boolean
-  error?: string
-}
-
-export type ItemsPayload = {
-  items: ProductionItem[]
-  staff: StaffLite[]
-  sample?: boolean
-  error?: string
-}
-
-export type TopicsPayload = {
-  items: TopicItem[]
-  recentStocks: RecentStock[]
-  staff: StaffLite[]
-  sample?: boolean
-  error?: string
-}
-
-export type WorkloadPayload = {
-  rows: WorkloadRow[]
-  today: string
+// ---- 응답 payload 타입 ----
+export type SeoChecklistsPayload = { items: SeoChecklist[]; sample?: boolean; error?: string }
+export type OptimizationPayload = { items: OptimizationRow[]; sample?: boolean; error?: string }
+export type KeywordsPayload = { items: KeywordRadarItem[]; recentStocks: RecentStock[]; sample?: boolean; error?: string }
+export type PlannerPayload = {
+  weekStart: string
   days: string[]
+  staff: StaffLite[]
+  planned: Record<string, Record<string, PlannedSlot[]>> // staffId -> ymd -> slots
+  actual: Record<string, Record<string, number>> // staffId -> ymd -> count
+  timingHint: TimingHint
+  sample?: boolean
+  error?: string
+}
+export type ReportPayload = {
+  items: DiscoverabilityRow[]
+  insight: string
   sample?: boolean
   error?: string
 }
 
-export type TemplatesPayload = {
-  items: ChecklistTemplate[]
-  sample?: boolean
+// ---- 공용 /api/videos/mine 응답 항목 (등록 직후 "내 등록 영상" 목록에 사용) ----
+export type MineVideoItem = {
+  id: string
+  title: string | null
+  stock_name: string
+  content_type: ContentType
+  published_at: string | null
+  view_count: number | null
+  like_count: number | null
+  comment_count: number | null
+  youtube_url: string | null
+  created_at: string
+}
+
+export type MineVideosPayload = {
+  items: MineVideoItem[]
+  pagination: { page: number; pageSize: number; totalCount: number }
   error?: string
 }
 
-export type ChecklistPayload = {
-  items: ChecklistRow[]
-  templateName: string | null
-  sample?: boolean
-  error?: string
-}
+// ---- 발견성 점수(Discoverability Score) 가중치/기준값 ----
+// 40% 조회 속도(발행 후 하루 평균 조회수) + 30% 좋아요율 + 30% SEO 체크리스트 완료율.
+// 목표값은 소규모 종목 분석 채널 벤치마크로 잡은 임의 기준(운영하며 조정 가능).
+// 클라이언트 컴포넌트에서도 안전하게 import 할 수 있도록 서버 전용 코드가 없는 이 파일에 둔다.
+export const VIEW_VELOCITY_TARGET_PER_DAY = 300
+export const LIKE_RATE_TARGET = 0.05
 
-export type StaffTargetsPayload = {
-  items: { userId: string; name: string; dailyTarget: number }[]
-  sample?: boolean
-  error?: string
-}
-
-export function isLateItem(item: Pick<ProductionItem, 'stage' | 'due_at'>, now = Date.now()) {
-  if (item.stage === 'done' || !item.due_at) return false
-  const due = new Date(item.due_at).getTime()
-  return Number.isFinite(due) && due < now
-}
-
-export function isInProgressStage(stage: Stage) {
-  return stage === 'shooting' || stage === 'editing' || stage === 'ready'
+// ---- 제목 키워드 템플릿 (정적 파생, 외부 API 없음) ----
+export function titleKeywordSuggestions(stockName: string): string[] {
+  const name = stockName.trim()
+  if (!name) return []
+  return [`${name} 실적`, `${name} 목표주가`, `${name} 전망`, `${name} 급등 이유`, `${name} 매수 타이밍`, `${name} 오늘 주가 분석`]
 }

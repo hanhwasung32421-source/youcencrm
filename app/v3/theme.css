@@ -178,7 +178,7 @@ body:has(.v3-theme) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   V3 수익화 · 정산 CRM — 문서형 레이아웃 확장
+   V3 시청자 참여 · 커뮤니티 성장 CRM — 문서형 레이아웃 확장
    ───────────────────────────────────────────────────────────── */
 
 .v3-theme .workspace {
@@ -678,7 +678,7 @@ body:has(.v3-theme) {
   fill: #787774;
 }
 
-/* 손익계산서 인쇄용 표 */
+/* 비교용 인쇄 스타일 표 (형식 · 시리즈 효과 비교 등) */
 .v3-theme .v3-print-table {
   width: 100%;
   border-collapse: collapse;
@@ -764,6 +764,177 @@ body:has(.v3-theme) {
   text-decoration: underline;
   text-decoration-color: rgba(59, 111, 224, 0.35);
   text-underline-offset: 3px;
+}
+
+/* 종목 pill 버튼(등록 폼) */
+.v3-theme .v3-tag-button {
+  border: 1px solid transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.v3-theme .v3-tag-button:hover {
+  filter: brightness(0.96);
+}
+
+.v3-theme .v3-tag-button.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-soft);
+}
+
+/* 링크 미리보기 블록(영상 등록) */
+.v3-theme .v3-link-preview {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--panel);
+  align-items: center;
+}
+
+.v3-theme .v3-link-preview-thumb {
+  width: 120px;
+  height: 68px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+}
+
+.v3-theme .v3-link-preview-thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 22px;
+}
+
+/* 좋아요 vs 댓글 참여 지형도(스캐터, CSS position 기반) */
+.v3-theme .v3-scatter-wrap {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 28px;
+  gap: 4px;
+}
+
+.v3-theme .v3-scatter-box {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  height: 320px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.v3-theme .v3-scatter-gridline {
+  position: absolute;
+  background: var(--line);
+}
+
+.v3-theme .v3-scatter-gridline-h {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.v3-theme .v3-scatter-gridline-v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.v3-theme .v3-scatter-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transform: translate(-50%, 50%);
+  background: var(--primary);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(59, 111, 224, 0.35);
+  cursor: default;
+}
+
+.v3-theme .v3-scatter-dot.amber {
+  background: var(--warning);
+  box-shadow: 0 0 0 1px rgba(217, 130, 43, 0.35);
+}
+
+.v3-theme .v3-scatter-dot.violet {
+  background: var(--violet);
+  box-shadow: 0 0 0 1px rgba(155, 126, 222, 0.35);
+}
+
+.v3-theme .v3-scatter-axis-x {
+  grid-column: 2;
+  grid-row: 2;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.v3-theme .v3-scatter-axis-y {
+  grid-column: 1;
+  grid-row: 1;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* 바이럴 신호 카드 */
+.v3-theme .v3-viral-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid rgba(217, 130, 43, 0.35);
+  background: rgba(217, 130, 43, 0.06);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.v3-theme .v3-viral-card.acked {
+  border-color: var(--line);
+  background: var(--panel);
+  opacity: 0.75;
+}
+
+/* 영상 선택 리스트(성장 곡선 / 시리즈) */
+.v3-theme .v3-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.v3-theme .v3-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  width: 100%;
+}
+
+.v3-theme .v3-picker-item:hover {
+  background: var(--bg-soft);
+}
+
+.v3-theme .v3-picker-item.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
 }
 
 @media (max-width: 1100px) {
