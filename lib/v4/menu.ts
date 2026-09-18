@@ -26,6 +26,14 @@ export const MENU_DEFINITIONS: readonly MenuDefinition[] = [
     description: '기간별 조회수·업로드 흐름과 목표 달성률'
   },
   {
+    key: 'video_register',
+    label: '영상 등록',
+    href: '/v4/register',
+    audience: 'all',
+    group: '개요',
+    description: '유튜브 URL과 종목명을 입력해 영상을 등록합니다'
+  },
+  {
     key: 'content_ranking',
     label: '콘텐츠 성과 랭킹',
     href: '/v4/ranking',
