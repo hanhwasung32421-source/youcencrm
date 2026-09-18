@@ -115,6 +115,33 @@ textarea {
   white-space: nowrap;
 }
 
+.version-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.version-switcher-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #0f1728;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: 0.15s ease;
+}
+
+.version-switcher-link:hover {
+  background: var(--panel-soft);
+  color: var(--text);
+  border-color: var(--primary);
+}
+
 .topbar-actions {
   display: inline-flex;
   align-items: center;

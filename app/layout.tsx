@@ -1,8 +1,14 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { BUILD_VERSION } from '@/lib/generated-version'
 import { TopbarAttendanceControls } from '@/components/topbar-attendance-controls'
 import { VersionBadge } from '@/components/version-badge'
+
+// 메인 앱과 완전히 분리된 디자인 실험용 사본(v2~v5)으로 바로 이동하는
+// 링크. 각 버전은 app/v{n}/, components/v{n}/, lib/v{n}/ 아래에 메인과
+// 독립적으로 복사되어 있어 여기서 자유롭게 고쳐도 메인에는 영향이 없다.
+const DESIGN_VERSIONS = ['v2', 'v3', 'v4', 'v5']
 
 export const metadata: Metadata = {
   title: '여왕개미미디어 CRM',
@@ -31,6 +37,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <div className="brand-sub">DB통계 CRM</div>
                 </div>
               </div>
+              <nav className="version-switcher" aria-label="디자인 버전 전환">
+                {DESIGN_VERSIONS.map((v) => (
+                  <Link key={v} className="version-switcher-link" href={`/${v}`}>
+                    {v}
+                  </Link>
+                ))}
+              </nav>
               <TopbarAttendanceControls version={BUILD_VERSION} />
             </div>
           </header>
