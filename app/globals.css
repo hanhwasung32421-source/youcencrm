@@ -184,10 +184,6 @@ textarea {
   gap: 18px;
 }
 
-.sidebar-toggle {
-  display: none;
-}
-
 .sidebar-section {
   border: 1px solid var(--line);
   background: rgba(22, 33, 54, 0.9);
@@ -987,15 +983,6 @@ textarea {
 
   .sidebar {
     position: static;
-    display: none;
-  }
-
-  .sidebar.sidebar-open {
-    display: flex;
-  }
-
-  .sidebar-toggle {
-    display: inline-flex;
   }
 
   .hero-grid,

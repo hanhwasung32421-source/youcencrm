@@ -25,11 +25,6 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [me, setMe] = useState<Me | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  useEffect(() => {
-    setSidebarOpen(false)
-  }, [pathname])
 
   useEffect(() => {
     const run = async () => {
@@ -66,7 +61,7 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="workspace">
-      <aside id="app-sidebar" className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      <aside id="app-sidebar" className="sidebar">
         <div className="sidebar-section">
           <div className="sidebar-caption">workspace</div>
           <nav className="sidebar-nav" aria-label="주요 메뉴">
@@ -76,7 +71,6 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
                 className={`sidebar-link ${pathname === item.href ? 'active' : ''}`}
                 href={item.href}
                 aria-current={pathname === item.href ? 'page' : undefined}
-                onClick={() => setSidebarOpen(false)}
               >
                 <span>{item.label}</span>
               </Link>
@@ -102,17 +96,7 @@ export function AppShellFrame({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <section className="content-area">
-        <button
-          className="button secondary sidebar-toggle"
-          aria-expanded={sidebarOpen}
-          aria-controls="app-sidebar"
-          onClick={() => setSidebarOpen((prev) => !prev)}
-        >
-          {sidebarOpen ? '메뉴 닫기' : '메뉴 열기'}
-        </button>
-        {children}
-      </section>
+      <section className="content-area">{children}</section>
     </div>
   )
 }
